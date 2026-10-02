@@ -22,6 +22,9 @@ jobs:
       - id: release
         uses: googleapis/release-please-action@v5
         with:
+          # A PR pushed with the default GITHUB_TOKEN triggers no workflow, so CI never runs on the release PR.
+          # RELEASE_PLEASE_TOKEN (fine-grained PAT: contents + pull requests, read and write) lifts that when set.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
