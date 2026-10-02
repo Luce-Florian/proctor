@@ -1,0 +1,34 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: A minimal `*.eval.ts`, the exact command and its output. Remove any credential first.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: proctor version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, agent (`--agent`) and sandbox (`--sandbox`).
+      placeholder: "macOS 15, Node 22.12, claude-code, srt"
+    validations:
+      required: true

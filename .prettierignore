@@ -1,0 +1,6 @@
+results/
+coverage/
+package-lock.json
+test/fixtures/
+README.md
+CLAUDE.md

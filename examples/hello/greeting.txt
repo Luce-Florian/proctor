@@ -1,0 +1,1 @@
+Copied into the workspace by the directory() fixture of hello.eval.ts.

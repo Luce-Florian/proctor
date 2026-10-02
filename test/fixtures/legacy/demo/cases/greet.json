@@ -1,0 +1,8 @@
+{
+  "id": "greet",
+  "description": "Greets the user, one prompt per variant.",
+  "prompt": { "baseline": "say hi", "with-tool": "/tool:greet say hi" },
+  "expected": {
+    "criteria": ["[principal] Says hi", "Stays short", "[leurre] Does not apologise: nothing went wrong"]
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "model": "claude-sonnet-5",
+  "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "__REPO_ROOT__/marketplace/plugins/demo-plugin/hooks/patch.sh" }] }] }
+}

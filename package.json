@@ -1,0 +1,98 @@
+{
+  "name": "@fluce/proctor",
+  "version": "0.0.0",
+  "description": "Agent-agnostic evaluation harness for coding agents and their plugins, skills and tools: xUnit lifecycle, one sandbox per trial, CTRF reports.",
+  "keywords": [
+    "evals",
+    "evaluation",
+    "llm",
+    "agents",
+    "coding-agents",
+    "claude-code",
+    "plugins",
+    "skills",
+    "sandbox",
+    "llm-as-a-judge",
+    "ctrf",
+    "xunit"
+  ],
+  "homepage": "https://github.com/Luce-Florian/proctor#readme",
+  "bugs": {
+    "url": "https://github.com/Luce-Florian/proctor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luce-Florian/proctor.git"
+  },
+  "license": "MIT",
+  "author": "Florian Luce",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "proctor": "./bin/proctor.js"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./testing": {
+      "source": "./src/testing/index.ts",
+      "types": "./dist/src/testing/index.d.ts",
+      "default": "./src/testing/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "!src/**/*.spec.ts",
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "imports": {
+    "#test/*": "./test/support/*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:behavior": "vitest run --project behavior",
+    "test:architecture": "vitest run --project behavior test/architecture.test.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "prepack": "npm run build",
+    "fingerprint:claude-home": "tsx scripts/fingerprint-claude-home.ts",
+    "rejudge": "tsx scripts/rejudge.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "^0.0.78",
+    "commander": "^15.0.0",
+    "p-limit": "^7.3.3",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}
