@@ -47,15 +47,19 @@ describe("isolation-probe suite", () => {
     ])
   })
 
-  it('fails when a read fails for another reason than a denial: "No such file" is not a block', async () => {
-    const missing = commands.map((c) =>
-      c.includes("settings.json") ? bash(c, `cat: ${c.slice(4)}: No such file or directory`, true) : denied(c),
-    )
+  // Bubblewrap (Linux) hides a denied path behind an empty directory, so there "No such file" is how a block reads.
+  it.skipIf(process.platform === "linux")(
+    'fails when a read fails for another reason than a denial: "No such file" is not a block',
+    async () => {
+      const missing = commands.map((c) =>
+        c.includes("settings.json") ? bash(c, `cat: ${c.slice(4)}: No such file or directory`, true) : denied(c),
+      )
 
-    const trial = await runProbe([control, ...missing, env])
+      const trial = await runProbe([control, ...missing, env])
 
-    expect(trial?.message).toBe("Unmet criteria: claude-settings-unreadable")
-  })
+      expect(trial?.message).toBe("Unmet criteria: claude-settings-unreadable")
+    },
+  )
 
   it("fails when the credential shows up in env or anywhere in the transcript", async () => {
     const leakyEnv = bash("env", "CLAUDE_CODE_OAUTH_TOKEN=[redacted by proctor]", false)
