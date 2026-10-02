@@ -52,7 +52,5 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
-      # prepack builds the type declarations. Trusted publishing needs no token; NPM_TOKEN only bootstraps the first release.
+      # prepack builds the type declarations. Trusted publishing authenticates through OIDC: no token, no secret.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
