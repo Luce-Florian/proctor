@@ -25,6 +25,13 @@ updates:
     groups:
       docs:
         patterns: ["*"]
+    ignore:
+      # vitepress-plugin-mermaid peers on mermaid 10 || 11 and vitepress ^1: a major waits until the plugin supports it.
+      # Mermaid 12 also switches the default layout to ELK, which re-lays out every diagram of the site.
+      - dependency-name: mermaid
+        update-types: ["version-update:semver-major"]
+      - dependency-name: vitepress
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: docs
   - package-ecosystem: github-actions
