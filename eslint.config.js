@@ -31,7 +31,8 @@ const restricted = [
 ]
 
 export default defineConfig(
-  { ignores: ["node_modules/", "results/", "dist/", "coverage/"] },
+  // docs/ is a separate VitePress project, with its own package.json.
+  { ignores: ["node_modules/", "results/", "dist/", "coverage/", "docs/"] },
   // Type-aware: the rules read the types, so they catch what the compiler lets through (floating promises,
   // conditions always true, unsafe values from JSON.parse).
   tseslint.configs.strictTypeChecked,
@@ -59,7 +60,7 @@ export default defineConfig(
           exports: sourceExports,
           // The eval-ts loader imports the user's *.eval.ts file: the one computed import of the package.
           computedImports: [src("loaders", "eval-ts.ts")],
-          // Closed by default: each layer lists what it may import, so a directory added later is refused until allowed.
+          // Closed by default: each layer below lists what it may import, so a directory added later is refused until allowed.
           forbidden: [
             // core/ only knows ports and the model: no agent, sandbox or output format.
             { from: src("core"), to: ["src"], allow: [src("core"), src("ports"), src("shared")] },

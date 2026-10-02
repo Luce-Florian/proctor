@@ -17,7 +17,7 @@ The rule that carries everything else: `core/` and `ports/` know no agent, no sa
 
 | Workaround | What closes it |
 |---|---|
-| a folder added under `src/` that nobody thought to forbid | each layer lists what it **may** import (`allow`): everything else is refused by default |
+| a folder added under `src/` that nobody thought to forbid | `core/`, `ports/`, `shared/` and `test/` list what they **may** import (`allow`): everything else is refused by default |
 | an `// eslint-disable` on the rule | `test/architecture.test.ts` relints the whole tree with `allowInlineConfig: false`: the comment hides nothing in `npm test` |
 | a computed `import(path)` that no static analysis follows | refused everywhere except `loaders/eval-ts.ts`, which loads the user's `*.eval.ts` |
 | the rule disabled or misconfigured | `test/architecture.test.ts` checks that it refuses every forbidden case and accepts every allowed one |
@@ -61,7 +61,8 @@ npx proctor run examples/hello.eval.ts --agent fake
 | Everything the lib produces: console, markdown and HTML reports, CTRF | English |
 | Judge prompt (`judge-protocol.ts`) | English |
 | Default words and filters of `yesNoContract`, patterns of `legacy-verdicts.ts`, the legacy bash bench format (`cases/*.json` + `variants/`, verdicts `"oui"`/`"non"`, the `[leurre]` prefix) | French, kept literal: they are data of the legacy bench, still a supported loader, and of the evaluated skill, not outputs of the lib |
-| `README.md`, docs, this file | English |
+| `README.md`, `docs/` (source of truth), this file | English |
+| `docs/fr/` | French: a translation of `docs/`, same pages, runnable code blocks (`ts`, `sh`, `console`, `json`) identical, identifiers and code comments left in English (`test/docs.test.ts`) |
 | Commit messages | English, Conventional Commits (see [commits and releases](#commits-and-releases)) |
 
 ## Commits and releases
@@ -144,6 +145,8 @@ Internal ports (`AgentAdapter`, `Sandbox`…) stay plain interfaces. Fluent appl
 
 ## Documentation
 
+- The README holds the pitch, the tested example, install and links. The reference lives on the docs site (`docs/`, VitePress, GitHub Pages): one question per page.
+- A change of a page in `docs/` changes its translation in `docs/fr/` in the same pull request.
 - Prefer visuals and examples over prose: file tree, Mermaid diagram, runnable code block, decision table.
 - Every README starts with an example that works, then explains.
 - One sentence per idea, no introductory paragraph.
@@ -217,7 +220,7 @@ Prettier decides the form, ESLint the substance. `eslint-config-prettier` turns 
 | `printWidth` | `140` | TSDoc and test tables fit on one line; at 80, builder chains break into a staircase |
 | quotes, trailing commas, arrow parentheses | Prettier defaults (`"`, `all`, `always`) | already the style of the code |
 
-A review remark on formatting is a sign that `npm run format` did not run, not a topic for discussion. `README.md`, `CLAUDE.md` and `test/fixtures/` are outside Prettier: Markdown tables and recorded fixtures keep their shape.
+A review remark on formatting is a sign that `npm run format` did not run, not a topic for discussion. `README.md`, `CLAUDE.md`, `docs/**/*.md` and `test/fixtures/` are outside Prettier: Markdown tables and recorded fixtures keep their shape.
 
 ## Tests: unit next to the code, behavior apart
 
