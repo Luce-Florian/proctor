@@ -17,7 +17,7 @@ The rule that carries everything else: `core/` and `ports/` know no agent, no sa
 
 | Workaround | What closes it |
 |---|---|
-| a folder added under `src/` that nobody thought to forbid | each layer lists what it **may** import (`allow`): everything else is refused by default |
+| a folder added under `src/` that nobody thought to forbid | `core/`, `ports/`, `shared/` and `test/` list what they **may** import (`allow`): everything else is refused by default |
 | an `// eslint-disable` on the rule | `test/architecture.test.ts` relints the whole tree with `allowInlineConfig: false`: the comment hides nothing in `npm test` |
 | a computed `import(path)` that no static analysis follows | refused everywhere except `loaders/eval-ts.ts`, which loads the user's `*.eval.ts` |
 | the rule disabled or misconfigured | `test/architecture.test.ts` checks that it refuses every forbidden case and accepts every allowed one |

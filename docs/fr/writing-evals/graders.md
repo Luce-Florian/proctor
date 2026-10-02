@@ -63,12 +63,7 @@ export default suite("check")
 
 ## Statuts
 
-| Statut | Quand |
-|---|---|
-| `passed` | tous les évaluateurs réussissent |
-| `failed` | un évaluateur renvoie `passed: false`, ou un critère `principal` est manqué même si l'évaluateur dit `passed` ; le message liste les critères manqués |
-| `other` | erreur d'infra (voir [Cycle de vie](./lifecycle.md)), ou rien n'a été évalué : voir ci-dessous |
-| `skipped` | `.skip()` ; aucune sandbox créée |
+Voir l'arbre de décision dans [Cycle de vie](./lifecycle.md#statuts).
 
 ## Non applicable
 

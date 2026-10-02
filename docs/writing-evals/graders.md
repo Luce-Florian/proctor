@@ -63,12 +63,7 @@ export default suite("check")
 
 ## Statuses
 
-| Status | When |
-|---|---|
-| `passed` | all graders pass |
-| `failed` | a grader returns `passed: false`, or a `principal` criterion is missed even if the grader says `passed`; the message lists the missed criteria |
-| `other` | infra error (see [Lifecycle](./lifecycle.md)), or nothing was graded: see below |
-| `skipped` | `.skip()`; no sandbox created |
+See the decision tree in [Lifecycle](./lifecycle.md#statuses).
 
 ## Not applicable
 

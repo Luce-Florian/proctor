@@ -2,11 +2,13 @@
 
 Trois niveaux évaluent une skill qui répond oui ou non : le verdict, la forme, puis le sens des lignes de raison.
 
-| Niveau | Évaluateur | Coût |
-|---|---|---|
-| verdict, principal | `verdictEquals(id, "yes" \| ["no", "yes"])` | gratuit |
-| forme | `answerShape(id, yesNoContract())` | gratuit |
-| sens des lignes de raison | `judge().criterion(...)`, gardé par `.when(verdictIs("yes"))` quand `non` est aussi valide | un appel au juge |
+```text
+oui                            ← verdict, principal : verdictEquals(id, "yes" | ["no", "yes"])         gratuit
+- Migration DDL sur outbox     ┐ forme : answerShape(id, yesNoContract()) : une raison par ligne,      gratuit
+- Suppression de users.email   ┘ ni titre, ni confiance, ni recommandation, ≤ 500 caractères chacune
+                                 sens des lignes : judge().criterion(...), gardé par                   un appel au juge
+                                 .when(verdictIs("yes")) quand "non" est aussi valide
+```
 
 Voir les cas `migration` et `split-controller` dans [Évaluateurs](./graders.md) pour un exemple complet.
 

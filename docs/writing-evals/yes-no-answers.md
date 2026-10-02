@@ -2,11 +2,13 @@
 
 Three levels grade a skill that answers yes or no: the verdict, the shape, then the meaning of the reason lines.
 
-| Level | Grader | Cost |
-|---|---|---|
-| verdict, principal | `verdictEquals(id, "yes" \| ["no", "yes"])` | free |
-| shape | `answerShape(id, yesNoContract())` | free |
-| meaning of the reason lines | `judge().criterion(...)`, gated with `.when(verdictIs("yes"))` when `non` is also valid | one judge call |
+```text
+oui                            ← verdict, principal: verdictEquals(id, "yes" | ["no", "yes"])      free
+- Migration DDL sur outbox     ┐ shape: answerShape(id, yesNoContract()): one reason per line,     free
+- Suppression de users.email   ┘ no heading, confidence or recommendation, ≤ 500 characters each
+                                 meaning of the lines: judge().criterion(...), gated with          one judge call
+                                 .when(verdictIs("yes")) when "non" is also valid
+```
 
 See the `migration` and `split-controller` cases in [Graders](./graders.md) for a full example.
 

@@ -4,14 +4,34 @@ L'adaptateur `claude-code` exécute `claude -p` dans trois couches, de l'extéri
 
 ```mermaid
 flowchart LR
-    H["harnais (hôte)<br/>git clone, installation de plugins"] --> S
+    H["harnais (hôte)<br/>git clone,<br/>installation de plugins"] --> S
     subgraph S["srt : Seatbelt / bubblewrap"]
-        direction LR
-        E["env en liste d'autorisation<br/>HOME, TMPDIR, XDG_* temporaires"] --> C
-        C["claude -p, prompt sur stdin<br/>CLAUDE_CONFIG_DIR temporaire<br/>--setting-sources user<br/>--strict-mcp-config"]
+        C["claude -p, prompt sur stdin<br/>env en liste d'autorisation<br/>HOME et<br/>CLAUDE_CONFIG_DIR<br/>temporaires<br/>--setting-sources user<br/>--strict-mcp-config"]
     end
-    C -. "system/init" .-> P{"sonde d'init<br/>MCP ou plugin non déclaré ?"}
-    P -->|oui| O["exécution tuée à cet événement<br/>essai other"]
+    C -. "stream-json" .-> H
+```
+
+Une exécution, dans l'ordre des appels :
+
+```mermaid
+sequenceDiagram
+    participant H as harnais (hôte)
+    participant S as srt
+    participant C as claude -p
+    Note over H: agent.prepare : copie ou installe les plugins, sans identifiant
+    H->>S: node srt/cli.js --settings politique -- claude -p …
+    S->>C: lance sous la politique, identifiant dans une variable
+    H->>C: prompt sur stdin
+    loop chaque ligne stream-json
+        C-->>H: ligne sur stdout
+        Note right of H: masque, écrit le transcript, analyse
+        opt system/init liste un MCP, un plugin ou un hook non déclaré
+            H->>S: SIGTERM au groupe de processus, SIGKILL après 2 s
+            Note over H: IsolationError : essai other
+        end
+    end
+    C-->>H: événement result
+    Note over H: AgentRunResult : finalText, toolCalls, coût, modèle
 ```
 
 ```sh

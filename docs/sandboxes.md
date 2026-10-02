@@ -11,7 +11,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 |---|---|---|
 | Isolation written in the report | `full` | `degraded`, plus a console warning |
 | HOME, TMPDIR, `XDG_*` | temporary | temporary |
-| Env | `PATH` without the entries under the host home, `LANG`, `LC_*`, `TERM`, `TZ`, `USER` | same |
+| Env | `PATH` without the entries under the host home, `LANG`, `LC_*`, `TERM`, `TZ`, `USER`, `LOGNAME` | same |
 | Read | host home and temporary directories hidden, except the trial root and the declared paths | the whole disk |
 | Write | the trial's workspace, home and TMPDIR, `.allowWrite()` paths | the whole disk |
 | Network | declared domains only | open |
@@ -21,6 +21,22 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 ## The `srt` policy
 
 The policy of a trial (`<trial root>/srt-settings.json`, outside the writable directories) denies broadly, then opens narrowly: in srt, `allowRead` wins over `denyRead`.
+
+```text
+host disk                                  what a trial sees under srt
+├── ~  (host home)                         hidden: ~/.ssh, ~/.aws, ~/.claude…
+├── /tmp, /var/folders, /Volumes           hidden
+├── os.tmpdir()                            hidden: parent of every trial root
+│   ├── ae-review-basel-a1b2c3/            readable: this trial's root
+│   │   ├── srt-settings.json              readable, not writable: the policy
+│   │   ├── work/                          writable: cwd, the workspace
+│   │   ├── home/                          writable: HOME, XDG_*, .claude/, .proctor/plugins/
+│   │   └── tmp/                           writable: TMPDIR, CLAUDE_CODE_TMPDIR
+│   └── ae-review-with--d4e5f6/            hidden: another trial (-j 2)
+├── directory of the claude binary         readable (sandboxAccess)
+├── .allowRead() / .allowWrite() paths     readable / writable
+└── /usr, /opt, /etc…                      readable: binaries, libraries, certificates
+```
 
 | Rule | Paths | Why |
 |---|---|---|
@@ -33,7 +49,6 @@ The policy of a trial (`<trial root>/srt-settings.json`, outside the writable di
 | `allowedDomains` | the model API for the profile, `.allowDomains()` | everything else is blocked by the srt proxy |
 | env | `CLAUDE_CODE_TMPDIR=<root>/tmp` | srt gives the command `TMPDIR=$CLAUDE_CODE_TMPDIR`, otherwise `/tmp/claude`, shared and hidden |
 
-- The rest of the disk (`/usr`, `/opt`, `/etc`…) stays readable: binaries, libraries and certificates that `claude`, `node` and the tools need.
 - Domains come from the agent (`sandboxAccess`: the model API for the profile) and from the suite (`.allowDomains(...)`).
 
 ## Opening the sandbox from a suite

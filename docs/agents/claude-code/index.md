@@ -6,12 +6,32 @@ The `claude-code` adapter runs `claude -p` in three layers, from the outside in 
 flowchart LR
     H["harness (host)<br/>git clone, plugin install"] --> S
     subgraph S["srt: Seatbelt / bubblewrap"]
-        direction LR
-        E["allowlisted env<br/>temporary HOME, TMPDIR, XDG_*"] --> C
-        C["claude -p, prompt on stdin<br/>temporary CLAUDE_CONFIG_DIR<br/>--setting-sources user<br/>--strict-mcp-config"]
+        C["claude -p, prompt on stdin<br/>allowlisted env<br/>temporary HOME and<br/>CLAUDE_CONFIG_DIR<br/>--setting-sources user<br/>--strict-mcp-config"]
     end
-    C -. "system/init" .-> P{"init probe<br/>undeclared MCP or plugin?"}
-    P -->|yes| O["run killed at that event<br/>trial other"]
+    C -. "stream-json" .-> H
+```
+
+One run, in call order:
+
+```mermaid
+sequenceDiagram
+    participant H as harness (host)
+    participant S as srt
+    participant C as claude -p
+    Note over H: agent.prepare: copy or install plugins, no credential
+    H->>S: node srt/cli.js --settings policy -- claude -p …
+    S->>C: spawn under the policy, credential in one env var
+    H->>C: prompt on stdin
+    loop each stream-json line
+        C-->>H: line on stdout
+        Note right of H: redact, write transcript, parse
+        opt system/init lists an undeclared MCP, plugin or hook
+            H->>S: SIGTERM to the process group, SIGKILL after 2 s
+            Note over H: IsolationError: trial other
+        end
+    end
+    C-->>H: result event
+    Note over H: AgentRunResult: finalText, toolCalls, cost, model
 ```
 
 ```sh

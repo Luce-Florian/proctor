@@ -20,5 +20,15 @@ A port of the legacy bench's `run.sh`.
 | `.applyDiff(f)` | one commit on the `eval-pr` branch, then `eval-pr.diff` deleted |
 | always | `eval-pr.diff`, `eval-spec.md`, `.claude/settings.local.json` in `.git/info/exclude`; commits without signature or hooks |
 
+With `.at(sha).overlay(dir).applyDiff(f)`, the agent starts on `eval-pr`, one commit ahead of a pinned `origin/main`:
+
+```mermaid
+gitGraph
+    commit id: "clone, .at(5fb0133)"
+    commit id: "overlay" tag: "origin/main"
+    branch eval-pr
+    commit id: "applyDiff"
+```
+
 - Paths are `new URL(…, import.meta.url)`: they resolve from the `*.eval.ts` file, not from the working directory.
 - A fixture (`git clone`) does not receive the interruption signal: see [Known limitations](../limitations.md).

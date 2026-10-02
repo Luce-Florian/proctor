@@ -69,7 +69,7 @@ La règle de lint `local/import-boundaries` bloque :
 - tout import de `adapters/`, `auth/`, `cli/`, `dsl/`, `fixtures/`, `graders/`, `loaders/`, `reporters/`, `testing/` ou `src/index.ts` depuis `core/` ou `ports/`, en relatif ou par le nom du package (`proctor`, `@fluce/proctor/testing`) ;
 - tout import de `core/` depuis `ports/` : les ports sont la couche la plus interne.
 
-- Chaque couche liste ce qu'elle **peut** importer : tout le reste est refusé par défaut.
+- `core/`, `ports/`, `shared/` et `test/` listent chacun ce qu'ils **peuvent** importer de `src/` : tout le reste, y compris un dossier ajouté plus tard, est refusé par défaut.
 - `test/architecture.test.ts` relance le lint sur tout l'arbre avec `allowInlineConfig: false` : un `// eslint-disable` ne cache rien dans `npm test`.
 - Un `import(path)` calculé est refusé partout sauf dans `loaders/eval-ts.ts`, qui charge le `*.eval.ts` de l'utilisateur.
 

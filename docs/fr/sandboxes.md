@@ -11,7 +11,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 |---|---|---|
 | Isolation écrite dans le rapport | `full` | `degraded`, plus un avertissement dans la console |
 | HOME, TMPDIR, `XDG_*` | temporaires | temporaires |
-| Env | `PATH` sans les entrées sous le home de l'hôte, `LANG`, `LC_*`, `TERM`, `TZ`, `USER` | idem |
+| Env | `PATH` sans les entrées sous le home de l'hôte, `LANG`, `LC_*`, `TERM`, `TZ`, `USER`, `LOGNAME` | idem |
 | Lecture | home de l'hôte et répertoires temporaires masqués, sauf la racine de l'essai et les chemins déclarés | tout le disque |
 | Écriture | l'espace de travail, le home et le TMPDIR de l'essai, les chemins de `.allowWrite()` | tout le disque |
 | Réseau | domaines déclarés uniquement | ouvert |
@@ -21,6 +21,22 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 ## La politique `srt`
 
 La politique d'un essai (`<trial root>/srt-settings.json`, hors des répertoires accessibles en écriture) refuse largement, puis ouvre étroitement : dans srt, `allowRead` l'emporte sur `denyRead`.
+
+```text
+disque de l'hôte                           ce qu'un essai voit sous srt
+├── ~  (home de l'hôte)                    masqué : ~/.ssh, ~/.aws, ~/.claude…
+├── /tmp, /var/folders, /Volumes           masqué
+├── os.tmpdir()                            masqué : parent de toutes les racines d'essai
+│   ├── ae-review-basel-a1b2c3/            lisible : la racine de cet essai
+│   │   ├── srt-settings.json              lisible, pas modifiable : la politique
+│   │   ├── work/                          modifiable : cwd, l'espace de travail
+│   │   ├── home/                          modifiable : HOME, XDG_*, .claude/, .proctor/plugins/
+│   │   └── tmp/                           modifiable : TMPDIR, CLAUDE_CODE_TMPDIR
+│   └── ae-review-with--d4e5f6/            masqué : un autre essai (-j 2)
+├── répertoire du binaire claude           lisible (sandboxAccess)
+├── chemins .allowRead() / .allowWrite()   lisible / modifiable
+└── /usr, /opt, /etc…                      lisible : binaires, bibliothèques, certificats
+```
 
 | Règle | Chemins | Pourquoi |
 |---|---|---|
@@ -33,7 +49,6 @@ La politique d'un essai (`<trial root>/srt-settings.json`, hors des répertoires
 | `allowedDomains` | l'API du modèle pour le profil, `.allowDomains()` | tout le reste est bloqué par le proxy srt |
 | env | `CLAUDE_CODE_TMPDIR=<root>/tmp` | srt donne à la commande `TMPDIR=$CLAUDE_CODE_TMPDIR`, sinon `/tmp/claude`, partagé et masqué |
 
-- Le reste du disque (`/usr`, `/opt`, `/etc`…) reste lisible : binaires, bibliothèques et certificats dont `claude`, `node` et les outils ont besoin.
 - Les domaines viennent de l'agent (`sandboxAccess` : l'API du modèle pour le profil) et de la suite (`.allowDomains(...)`).
 
 ## Ouvrir la sandbox depuis une suite

@@ -29,7 +29,7 @@ Le loader historique reconnaît le contrat oui/non d'un cas à ses critères, sa
 | `Rend le verdict "non"…` | verdict, **principal** | `verdictEquals(id, verdict)` |
 | `La sortie est strictement "non"…`, `La sortie est "oui" suivi uniquement d'une ligne par pattern…`, `Aucun texte hors du contrat…` | forme | `answerShape(id, yesNoContract({ verdicts }))`, avec les verdicts que le cas accepte |
 | `S'il répond "non", la sortie est … ; s'il répond "oui" …, la sortie est …` | forme, les deux verdicts acceptés | idem |
-| `Une des lignes identifie une migration…`, `S'il répond "oui", aucune ligne ne prétend…` | sens des lignes de raison | `judge()` `claude-sonnet-5`, le diff du cas, critère **principal**, `.minScore(1)` ; `.when(verdictIs("yes"))` seulement si `non` est aussi accepté |
+| `Une des lignes identifie une migration…`, `S'il répond "oui", aucune ligne ne prétend…` | sens des lignes de raison | `judge()` `claude-sonnet-5`, le diff du cas, critère **principal**, `.minScore(1)` ; `.when(verdictIs("yes"))` dès que `non` est accepté |
 
 | Cas | Évaluateurs | Appels au juge |
 |---|---|---|

@@ -29,7 +29,7 @@ The legacy loader recognizes a case's yes/no contract from its criteria, without
 | `Rend le verdict "non"…` | verdict, **principal** | `verdictEquals(id, verdict)` |
 | `La sortie est strictement "non"…`, `La sortie est "oui" suivi uniquement d'une ligne par pattern…`, `Aucun texte hors du contrat…` | shape | `answerShape(id, yesNoContract({ verdicts }))`, with the verdicts the case accepts |
 | `S'il répond "non", la sortie est … ; s'il répond "oui" …, la sortie est …` | shape, both verdicts accepted | same |
-| `Une des lignes identifie une migration…`, `S'il répond "oui", aucune ligne ne prétend…` | meaning of the reason lines | `judge()` `claude-sonnet-5`, the case's diff, **principal** criterion, `.minScore(1)`; `.when(verdictIs("yes"))` only if `non` is also accepted |
+| `Une des lignes identifie une migration…`, `S'il répond "oui", aucune ligne ne prétend…` | meaning of the reason lines | `judge()` `claude-sonnet-5`, the case's diff, **principal** criterion, `.minScore(1)`; `.when(verdictIs("yes"))` as soon as `non` is accepted |
 
 | Case | Graders | Judge calls |
 |---|---|---|

@@ -20,5 +20,15 @@ Un portage du `run.sh` du banc historique.
 | `.applyDiff(f)` | un commit sur la branche `eval-pr`, puis `eval-pr.diff` supprimé |
 | toujours | `eval-pr.diff`, `eval-spec.md`, `.claude/settings.local.json` dans `.git/info/exclude` ; commits sans signature ni hooks |
 
+Avec `.at(sha).overlay(dir).applyDiff(f)`, l'agent démarre sur `eval-pr`, un commit devant un `origin/main` épinglé :
+
+```mermaid
+gitGraph
+    commit id: "clone, .at(5fb0133)"
+    commit id: "overlay" tag: "origin/main"
+    branch eval-pr
+    commit id: "applyDiff"
+```
+
 - Les chemins sont des `new URL(…, import.meta.url)` : ils se résolvent depuis le fichier `*.eval.ts`, pas depuis le répertoire courant.
 - Une fixture (`git clone`) ne reçoit pas le signal d'interruption : voir [Limitations connues](../limitations.md).
