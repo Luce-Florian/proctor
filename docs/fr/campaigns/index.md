@@ -24,4 +24,4 @@ npm run fingerprint:claude-home -- --compare before.json
 
 ## Ajouter une campagne
 
-Ajoutez une page `campaigns/<date>-<topic>.md` avec la date, la version de la CLI, le profil d'authentification, la sandbox, les modèles, les commandes et les résultats. Ajoutez-la au tableau ci-dessus et à la barre latérale dans `docs/.vitepress/config.mts`, en anglais et en français.
+Ajoutez une page `campaigns/<date>-<topic>.md` avec la date, la version de la CLI, le profil d'authentification, la sandbox, les modèles, les commandes et les résultats. Ajoutez sa traduction française dans `fr/campaigns/<date>-<topic>.md` : `test/docs.test.ts` l'exige. Ajoutez les deux au tableau ci-dessus, et à `sections` dans `docs/.vitepress/config.mts` avec un titre dans chaque langue.

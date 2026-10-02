@@ -1,6 +1,6 @@
 # 2026-09-30 : isolation et parité
 
-Exécutée le 2026-09-30 : CLI `2.1.280`, profil `oauth`, sandbox `srt` sauf mention contraire, modèle `claude-sonnet-5`. En plus de la sonde d'isolation de ce dépôt, elle a exécuté des thèmes d'un banc privé au format bash historique.
+Exécutée le 2026-09-30 : CLI `2.1.280`, profil `oauth`, sandbox `srt` sauf mention contraire, modèle `claude-sonnet-5`. En plus de la sonde d'isolation de ce dépôt, la campagne a exécuté des thèmes d'un banc privé au format bash historique.
 
 ```sh
 export CLAUDE_CODE_OAUTH_TOKEN=…                       # claude setup-token
@@ -41,6 +41,6 @@ Les trois critères d'acceptation de la parité tiennent : baseline entre 8 et 1
 | un thème qui lance `dotnet test` | les deux | score 1 | 2 / 5 | pas de parité sous srt : `dotnet` écrit dans `/tmp/.dotnet/shm` (refusé) et la restauration NuGet sort du réseau autorisé |
 | un thème qui lance `dotnet build` | les deux | `other` | — | chemins de socket srt tronqués à 104 octets (`EADDRINUSE`) ; corrigé depuis avec une racine d'essai courte, vérifié hors campagne |
 
-Coût total des campagnes : environ $8.8, juge compris.
+Coût total de cette campagne : environ $8.8, juge compris.
 
 L'empreinte de `~/.claude` (`settings.json`, `plugins/`, `known_marketplaces.json`) est identique avant et après toutes les campagnes.

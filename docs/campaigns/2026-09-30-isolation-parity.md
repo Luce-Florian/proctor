@@ -1,6 +1,6 @@
 # 2026-09-30: isolation and parity
 
-Run on 2026-09-30: CLI `2.1.280`, profile `oauth`, sandbox `srt` unless noted, model `claude-sonnet-5`. Besides this repo's isolation probe, they ran themes of a private bench in the legacy bash format.
+Run on 2026-09-30: CLI `2.1.280`, profile `oauth`, sandbox `srt` unless noted, model `claude-sonnet-5`. Besides this repo's isolation probe, the campaign ran themes of a private bench in the legacy bash format.
 
 ```sh
 export CLAUDE_CODE_OAUTH_TOKEN=…                       # claude setup-token
@@ -41,6 +41,6 @@ The three parity acceptance criteria hold: baseline between 8 and 10 on average,
 | a theme that runs `dotnet test` | both | score 1 | 2 / 5 | no parity under srt: `dotnet` writes to `/tmp/.dotnet/shm` (denied) and the NuGet restore leaves the allowed network |
 | a theme that runs `dotnet build` | both | `other` | — | srt socket paths truncated at 104 bytes (`EADDRINUSE`); fixed since with a short trial root, checked outside the campaign |
 
-Total cost of the campaigns: about $8.8, judge included.
+Total cost of this campaign: about $8.8, judge included.
 
 The fingerprint of `~/.claude` (`settings.json`, `plugins/`, `known_marketplaces.json`) is identical before and after all campaigns.
