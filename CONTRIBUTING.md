@@ -36,13 +36,30 @@ npm run check   # format:check + lint + typecheck + all tests
 
 Tests never use the network or real credentials: `test/support/setup.ts` clears credential variables and fails any test that opens a connection. Tests never read files outside the repository.
 
+### Docs site
+
+The docs site is a separate [VitePress](https://vitepress.dev) project in `docs/`, published to [GitHub Pages](https://luce-florian.github.io/proctor/) on every merge to `main`.
+
+```sh
+cd docs
+npm ci
+npm run dev     # local preview with hot reload
+npm run build   # what CI runs: fails on a dead internal link
+```
+
+| Path                         | Content                                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `docs/**/*.md`               | English pages, the source of truth                                                                                        |
+| `docs/fr/**/*.md`            | French translation: same pages, same runnable code blocks (`ts`, `sh`, `console`, `json`), checked by `test/docs.test.ts` |
+| `docs/.vitepress/config.mts` | locales and sidebar: a new page goes into `sections`, with its title in both languages                                    |
+
 [CLAUDE.md](CLAUDE.md) describes the architecture, the layers and the coding conventions. Read it before a non-trivial change. It is written for coding agents, and it applies to humans too.
 
 ## Pull requests
 
 - Branch from `main`. Keep each pull request focused on one change.
 - Add or update tests for every behavior change. A bug fix comes with a test that fails without the fix.
-- Update `README.md` when you change the public API or the CLI. Its `ts` examples are compiled by the tests.
+- Update the docs when you change the public API or the CLI: the English page in `docs/` and its French translation in `docs/fr/`. Their `ts` examples are compiled by the tests, and their runnable blocks must be identical in both languages.
 - `npm run check` must pass locally. CI runs the same checks on Node 22.12, 22 and 24.
 - Don't edit `CHANGELOG.md` or the version in `package.json`: release-please maintains both.
 

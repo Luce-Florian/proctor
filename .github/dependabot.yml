@@ -17,6 +17,16 @@ updates:
     commit-message:
       prefix: build
       prefix-development: chore
+  # The docs site: a separate VitePress project.
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+    groups:
+      docs:
+        patterns: ["*"]
+    commit-message:
+      prefix: docs
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -11,4 +11,4 @@
 - [ ] The title follows Conventional Commits (`feat: …`, `fix(cli): …`); it becomes the squashed commit message.
 - [ ] `npm run check` passes locally.
 - [ ] Behavior changes come with tests.
-- [ ] `README.md` is updated if the public API or the CLI changed.
+- [ ] The docs (`docs/`, and `docs/fr/` in the same pull request) are updated if the public API or the CLI changed.

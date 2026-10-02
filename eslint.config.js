@@ -31,7 +31,8 @@ const restricted = [
 ]
 
 export default defineConfig(
-  { ignores: ["node_modules/", "results/", "dist/", "coverage/"] },
+  // docs/ is a separate VitePress project, with its own package.json.
+  { ignores: ["node_modules/", "results/", "dist/", "coverage/", "docs/"] },
   // Type-aware: the rules read the types, so they catch what the compiler lets through (floating promises,
   // conditions always true, unsafe values from JSON.parse).
   tseslint.configs.strictTypeChecked,

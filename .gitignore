@@ -3,3 +3,5 @@ dist/
 results/
 coverage/
 *.tgz
+docs/.vitepress/cache/
+docs/.vitepress/dist/
