@@ -46,7 +46,7 @@ export async function main(argv: readonly string[], io: CliIo = { stdout: proces
   const cwd = io.cwd ?? process.cwd()
   let exitCode: number = ExitCode.Ok
   const program = new Command("proctor")
-    .description("Evaluate coding agents: xUnit lifecycle, isolated trials, CTRF reports.")
+    .description("Evaluate coding agents: test-framework lifecycle, isolated trials, CTRF reports.")
     .version(packageJson.version)
     .exitOverride()
     .configureOutput({ writeOut: (s) => io.stdout.write(s), writeErr: (s) => io.stderr.write(s) })

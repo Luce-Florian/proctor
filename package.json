@@ -1,7 +1,7 @@
 {
   "name": "@fluce/proctor",
   "version": "0.1.0",
-  "description": "Agent-agnostic evaluation harness for coding agents and their plugins, skills and tools: xUnit lifecycle, one sandbox per trial, CTRF reports.",
+  "description": "Agent-agnostic evaluation harness for coding agents and their plugins, skills and tools: test-framework lifecycle, one sandbox per trial, CTRF reports.",
   "keywords": [
     "evals",
     "evaluation",
@@ -14,7 +14,7 @@
     "sandbox",
     "llm-as-a-judge",
     "ctrf",
-    "xunit"
+    "lifecycle"
   ],
   "homepage": "https://luce-florian.github.io/proctor/",
   "bugs": {

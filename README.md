@@ -65,7 +65,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --repeat 3 -j 3 --rep
 |---|---|
 | Fluent, typed authoring API: suites, variants, cases, fixtures | [Writing evals](https://luce-florian.github.io/proctor/writing-evals/) |
 | Deterministic graders, yes/no contracts, an LLM judge with stable ids and bounded scores | [Graders](https://luce-florian.github.io/proctor/writing-evals/graders), [LLM judge](https://luce-florian.github.io/proctor/writing-evals/judge) |
-| xUnit lifecycle: cleanup always runs, interruptions write a partial report | [Lifecycle](https://luce-florian.github.io/proctor/writing-evals/lifecycle) |
+| Test-framework lifecycle (`beforeAll`, `beforeEach`, `afterEach`, `afterAll`): cleanup always runs, interruptions write a partial report | [Lifecycle](https://luce-florian.github.io/proctor/writing-evals/lifecycle) |
 | One sandbox per trial (`srt`), credential masked everywhere, isolation probe | [Sandboxes](https://luce-florian.github.io/proctor/sandboxes), [Claude Code](https://luce-florian.github.io/proctor/agents/claude-code/) |
 | CTRF, markdown and HTML reports, ablation against a baseline | [Reports](https://luce-florian.github.io/proctor/running/reports), [CLI](https://luce-florian.github.io/proctor/running/cli) |
 | Loader for the legacy bash bench format | [Legacy loader](https://luce-florian.github.io/proctor/legacy/loader) |

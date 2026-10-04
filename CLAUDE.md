@@ -1,6 +1,6 @@
 # proctor — working guide
 
-Evaluation harness for coding agents (Claude Code today, OpenCode next): xUnit lifecycle, layered isolation, [CTRF](https://ctrf.io) reports.
+Evaluation harness for coding agents (Claude Code today, OpenCode next): set-up / tear-down lifecycle of test frameworks, layered isolation, [CTRF](https://ctrf.io) reports.
 
 - The package is self-contained: it imports nothing but Node and its declared dependencies.
 - Tests never read files outside the package. A test that needs a sample brings it into `test/fixtures/`.
@@ -239,7 +239,7 @@ Where to put a new test: if it stays true when every other module is replaced by
 | `parseDuration("10m")` is 600,000 ms; `"10"` throws a message that says what to do | spec, `src/core/duration.spec.ts` |
 | the parser replays a recorded `stream-json` stream and returns turns, cost and model | spec, `stream-parser.spec.ts` |
 | an interrupted trial exits with 2 and still writes the report | behavior, `test/cli.test.ts` |
-| hooks run in xUnit order, teardown included when `act` throws | behavior, `test/lifecycle.test.ts` |
+| hooks run in lifecycle order, teardown included when `act` throws | behavior, `test/lifecycle.test.ts` |
 
 What does not change from one type to the other:
 
