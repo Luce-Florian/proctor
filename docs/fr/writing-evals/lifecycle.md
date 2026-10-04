@@ -1,5 +1,48 @@
 # Cycle de vie
 
+Les hooks suivent le modèle mise en place / démontage commun aux frameworks de test comme JUnit, pytest, Jest ou Vitest : ce qui est mis en place avant est démonté après, même quand une étape échoue.
+
+## Hooks
+
+| proctor | Déclaré sur | S'exécute | JUnit 5 | pytest | Jest, Vitest |
+|---|---|---|---|---|---|
+| `.beforeAll(fn)` | suite | une fois, avant le premier essai | `@BeforeAll` | fixture `scope="session"` | `beforeAll` |
+| `.fixture(f)` | cas | par essai, mise en place avant l'agent, démontée après | — | fixture de fonction avec `yield` | — |
+| `.beforeEach(fn)` | variante | par essai, après les fixtures et `agent.prepare` | `@BeforeEach` | fixture `autouse`, avant `yield` | `beforeEach` |
+| act : `agent.run` | — | par essai, dans la sandbox | corps du test | corps du test | corps de `it` / `test` |
+| assert : `.expect(grader)` | cas | par essai, après act | assertions | `assert` | `expect` |
+| `.afterEach(fn)` | variante | par essai, après l'évaluation, même si `beforeEach` lève une erreur | `@AfterEach` | fixture `autouse`, après `yield` | `afterEach` |
+| `.afterAll(fn)` | suite | une fois, après le dernier essai, même si `beforeAll` lève une erreur | `@AfterAll` | fixture `scope="session"`, après `yield` | `afterAll` |
+
+```ts
+import { appendFile } from "node:fs/promises"
+import { join } from "node:path"
+import { regex, suite } from "@fluce/proctor"
+
+export default suite("lifecycle")
+  .beforeAll(() => console.log("once, before the first trial"))
+  .afterAll(() => console.log("once, after the last trial"))
+  .variant("baseline", (v) =>
+    v
+      .prompt("Say hello")
+      .beforeEach(({ workspace }) => appendFile(join(workspace.cwd, "NOTES.md"), "Be polite.\n"))
+      .afterEach(({ caseId, variant, trial }) => console.log(`${caseId} [${variant}] #${trial} done`)),
+  )
+  .case("greets", (c) => c.expect(regex("says-hello", /hello/i)))
+```
+
+| Hook | Reçoit | Peut renvoyer |
+|---|---|---|
+| `beforeAll`, `afterAll` | rien | `void` ou une promesse |
+| `beforeEach`, `afterEach` | `{ caseId, variant, trial, workspace }` : `trial` commence à 1, `workspace` porte `cwd`, `home`, `env` | `void` ou une promesse |
+
+- Plusieurs hooks du même type s'exécutent dans l'ordre de déclaration, `afterEach` et `afterAll` compris.
+- Un `beforeAll`, `beforeEach` ou `afterAll` qui lève une erreur saute les hooks du même type déclarés après lui ; chaque `afterEach` s'exécute, même si un autre a levé une erreur.
+- Il n'y a pas de hook de cas : un cas met en place son état par une fixture, qui renvoie son propre démontage (voir [Fixtures](./fixtures.md)).
+- Les hooks s'exécutent hors de la sandbox de l'agent : voir [ce qui s'exécute où](#ce-qui-s-execute-ou).
+
+## Exécution
+
 Une exécution encadre ses essais entre `beforeAll` et `afterAll`, appelés une fois chacun.
 
 ```mermaid
@@ -8,7 +51,9 @@ flowchart LR
     BA -. lève .-> X["aucun essai ne démarre<br/>tous other, skipped à part"] --> AA
 ```
 
-Chaque essai suit l'ordre xUnit. Chaque étape réussie empile son annulation ; la pile se déroule après assert, ou à la première erreur levée.
+## Essai
+
+Chaque essai se met en place, agit, vérifie, puis se démonte. Chaque étape réussie empile son annulation ; la pile se déroule après assert, ou à la première erreur levée.
 
 ```mermaid
 flowchart LR

@@ -97,7 +97,7 @@ const sidebar = (locale: Locale): DefaultTheme.SidebarItem[] => {
 export default withMermaid(
   defineConfig({
     title: "proctor",
-    description: "Evaluation harness for coding agents: xUnit lifecycle, one sandbox per trial, CTRF reports.",
+    description: "Evaluation harness for coding agents: test-framework lifecycle, one sandbox per trial, CTRF reports.",
     base: "/proctor/",
     cleanUrls: true,
     lastUpdated: true,

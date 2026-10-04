@@ -17,7 +17,7 @@ hero:
       link: https://github.com/Luce-Florian/proctor
 
 features:
-  - title: xUnit lifecycle
+  - title: Test-framework lifecycle
     details: beforeAll, beforeEach, act, assert, afterEach, afterAll. Cleanup always runs for what was set up.
     link: /writing-evals/lifecycle
   - title: One sandbox per trial

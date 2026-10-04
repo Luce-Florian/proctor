@@ -1,5 +1,48 @@
 # Lifecycle
 
+The hooks follow the set-up / tear-down model shared by test frameworks such as JUnit, pytest, Jest or Vitest: what is set up before is torn down after, even when a step fails.
+
+## Hooks
+
+| proctor | Declared on | Runs | JUnit 5 | pytest | Jest, Vitest |
+|---|---|---|---|---|---|
+| `.beforeAll(fn)` | suite | once, before the first trial | `@BeforeAll` | `scope="session"` fixture | `beforeAll` |
+| `.fixture(f)` | case | per trial, set up before the agent, torn down after | — | function fixture with `yield` | — |
+| `.beforeEach(fn)` | variant | per trial, after fixtures and `agent.prepare` | `@BeforeEach` | `autouse` fixture, before `yield` | `beforeEach` |
+| act: `agent.run` | — | per trial, inside the sandbox | test body | test body | `it` / `test` body |
+| assert: `.expect(grader)` | case | per trial, after act | assertions | `assert` | `expect` |
+| `.afterEach(fn)` | variant | per trial, after grading, even when `beforeEach` throws | `@AfterEach` | `autouse` fixture, after `yield` | `afterEach` |
+| `.afterAll(fn)` | suite | once, after the last trial, even when `beforeAll` throws | `@AfterAll` | `scope="session"` fixture, after `yield` | `afterAll` |
+
+```ts
+import { appendFile } from "node:fs/promises"
+import { join } from "node:path"
+import { regex, suite } from "@fluce/proctor"
+
+export default suite("lifecycle")
+  .beforeAll(() => console.log("once, before the first trial"))
+  .afterAll(() => console.log("once, after the last trial"))
+  .variant("baseline", (v) =>
+    v
+      .prompt("Say hello")
+      .beforeEach(({ workspace }) => appendFile(join(workspace.cwd, "NOTES.md"), "Be polite.\n"))
+      .afterEach(({ caseId, variant, trial }) => console.log(`${caseId} [${variant}] #${trial} done`)),
+  )
+  .case("greets", (c) => c.expect(regex("says-hello", /hello/i)))
+```
+
+| Hook | Receives | May return |
+|---|---|---|
+| `beforeAll`, `afterAll` | nothing | `void` or a promise |
+| `beforeEach`, `afterEach` | `{ caseId, variant, trial, workspace }`: `trial` is 1-based, `workspace` holds `cwd`, `home`, `env` | `void` or a promise |
+
+- Several hooks of the same kind run in declaration order, `afterEach` and `afterAll` included.
+- A `beforeAll`, `beforeEach` or `afterAll` that throws skips the hooks of the same kind declared after it; every `afterEach` runs, even when another one threw.
+- There is no case hook: a case sets up its state with a fixture, which returns its own teardown (see [Fixtures](./fixtures.md)).
+- Hooks run outside the agent's sandbox: see [what runs where](#what-runs-where).
+
+## Run
+
 A run wraps its trials between `beforeAll` and `afterAll`, each called once.
 
 ```mermaid
@@ -8,7 +51,9 @@ flowchart LR
     BA -. throws .-> X["no trial starts<br/>all other, skipped aside"] --> AA
 ```
 
-Each trial follows the xUnit order. Each step that succeeds stacks its undo; the stack unwinds after assert, or at the first throw.
+## Trial
+
+Each trial sets up, acts, asserts, then tears down. Each step that succeeds stacks its undo; the stack unwinds after assert, or at the first throw.
 
 ```mermaid
 flowchart LR

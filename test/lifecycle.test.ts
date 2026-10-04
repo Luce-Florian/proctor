@@ -61,7 +61,7 @@ async function runRecorded(
 }
 
 describe("trial lifecycle", () => {
-  it("runs hooks in xUnit order", async () => {
+  it("runs hooks in set-up, act, assert, tear-down order", async () => {
     const { events, trial } = await runRecorded()
 
     expect(events).toEqual(["beforeAll", "setup", "beforeEach", "act", "assert", "afterEach", "teardown", "afterAll"])

@@ -17,7 +17,7 @@ hero:
       link: https://github.com/Luce-Florian/proctor
 
 features:
-  - title: Cycle de vie xUnit
+  - title: Cycle de vie des frameworks de test
     details: beforeAll, beforeEach, act, assert, afterEach, afterAll. Le nettoyage s'exécute toujours pour ce qui a été mis en place.
     link: /fr/writing-evals/lifecycle
   - title: Une sandbox par essai
