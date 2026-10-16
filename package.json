@@ -78,7 +78,7 @@
     "rejudge": "tsx scripts/rejudge.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sandbox-runtime": "^0.0.78",
+    "@anthropic-ai/sandbox-runtime": "^0.0.79",
     "commander": "^15.0.0",
     "p-limit": "^7.3.3",
     "tsx": "^4.23.15",
