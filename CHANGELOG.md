@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Luce-Florian/proctor/compare/v0.2.0...v0.2.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **package:** keep the proctor bin when npm 11 publishes ([#20](https://github.com/Luce-Florian/proctor/issues/20)) ([f8d3d60](https://github.com/Luce-Florian/proctor/commit/f8d3d60e0d2d8e2525c752989ead5a8716c04961))
+
 ## [0.2.0](https://github.com/Luce-Florian/proctor/compare/v0.1.0...v0.2.0) (2026-11-04)
 
 
