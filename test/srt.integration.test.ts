@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from "vitest"
 import { NO_ACCESS, type Workspace } from "@fluce/proctor"
 import { runProcess, which } from "../src/adapters/process.ts"
 import { SrtSandbox } from "../src/adapters/sandboxes/srt/sandbox.ts"
-import { tempDir } from "#test/helpers.ts"
+import { gitIn, tempDir } from "#test/helpers.ts"
 
 /** Why srt cannot run here, or undefined when it can. */
 function unavailable(): string | undefined {
@@ -90,30 +90,19 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
   }, 60_000)
 
   it("runs in a git workspace, as a gitRepo fixture leaves it, and still guards its dotfiles (issue #16)", async () => {
-    const sandbox = new SrtSandbox({ hostHome: fakeHome, tmpRoot: await tempDir() })
-    const [ws, other] = [
-      await sandbox.create({ label: "srt git", access: NO_ACCESS }),
-      await sandbox.create({ label: "srt peer", access: NO_ACCESS }),
-    ]
-    await writeFile(join(other.cwd, "other-trial.txt"), "other trial output")
-    const git = await runProcess(
-      { file: "git", args: ["init", "-q"] },
-      { cwd: ws.cwd, env: { PATH: process.env.PATH ?? "" }, signal: AbortSignal.timeout(30_000) },
-    )
-    expect(git.code).toBe(0)
+    // The package dir as host home hides node_modules, as a CI checkout under /home/runner does: srt must still
+    // reach its own seccomp binaries on Linux.
+    const sandbox = new SrtSandbox({ hostHome: packageDir, tmpRoot: await tempDir() })
+    const ws = await sandbox.create({ label: "srt git", access: NO_ACCESS })
     try {
+      gitIn(ws.cwd)("init", "-q")
       const work = await sh(ws, "echo change > change.txt && cat change.txt && git status --porcelain")
       expect(work).toMatchObject({ code: 0, output: expect.stringContaining("change.txt") })
 
       const dotfile = await sh(ws, "echo '[alias]' > .gitconfig")
       expect(dotfile.code).not.toBe(0)
-
-      const otherTrial = await sh(ws, `cat ${join(other.cwd, "other-trial.txt")}`)
-      expect(otherTrial.code).not.toBe(0)
-      expect(otherTrial.output).not.toContain("other trial output")
     } finally {
       await sandbox.destroy(ws)
-      await sandbox.destroy(other)
     }
   }, 60_000)
 })

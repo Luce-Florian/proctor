@@ -10,15 +10,16 @@ describe("srt sandbox", () => {
       network: { allowedDomains: ["api.anthropic.com"], deniedDomains: [] },
       filesystem: {
         denyRead: ["/Users/me", "/tmp", "/Volumes"],
-        allowRead: ["/tmp/r/work", "/tmp/r/home", "/tmp/r/tmp", "/opt/claude", "/tmp/.dotnet"],
+        allowRead: ["/tmp/r/work", "/tmp/r/home", "/tmp/r/tmp", "/tmp/.dotnet", "/opt/claude"],
         allowWrite: ["/tmp/r/work", "/tmp/r/home", "/tmp/r/tmp", "/tmp/.dotnet"],
         denyWrite: [],
       },
     })
   })
 
-  it("never re-allows the trial root itself, which would bury the writable workspace on Linux", () => {
-    const { allowRead } = srtSettings(layout, spec.access, { home: "/Users/me", sharedTemp: ["/tmp"] }).filesystem
-    expect(allowRead).not.toContain(layout.root)
+  it("re-allows no parent of a writable path, such as the trial root: on Linux it would bury that path read-only", () => {
+    const { allowRead, allowWrite } = srtSettings(layout, spec.access, { home: "/Users/me", sharedTemp: ["/tmp"] }).filesystem
+    const parents = allowRead.filter((read) => allowWrite.some((write) => write.startsWith(`${read}/`)))
+    expect(parents).toEqual([])
   })
 })

@@ -12,7 +12,7 @@ export interface SrtSettings {
   }
 }
 
-/** Host directories hidden from every trial, besides its own root. */
+/** Host directories hidden from every trial, besides its own workspace, home and TMPDIR. */
 export interface HiddenHostPaths {
   /** The host home: `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.claude`... */
   readonly home: string
@@ -42,13 +42,13 @@ export const SHARED_TEMP_DIRS: readonly string[] = ["/tmp", "/private/tmp", "/va
  * // { network: { allowedDomains: ["api.anthropic.com"], ... }, filesystem: { denyRead: ["/Users/me", "/tmp"], ... } }
  */
 export function srtSettings(layout: TempLayout, access: SandboxAccess, hidden: HiddenHostPaths): SrtSettings {
-  const writable = access.writablePaths ?? []
+  const writes = [...new Set([layout.cwd, layout.home, layout.tmp, ...(access.writablePaths ?? [])])]
   return {
     network: { allowedDomains: [...access.allowedDomains], deniedDomains: [] },
     filesystem: {
       denyRead: [...new Set([hidden.home, ...hidden.sharedTemp])],
-      allowRead: [...new Set([layout.cwd, layout.home, layout.tmp, ...access.readablePaths, ...writable])],
-      allowWrite: [...new Set([layout.cwd, layout.home, layout.tmp, ...writable])],
+      allowRead: [...new Set([...writes, ...access.readablePaths])],
+      allowWrite: writes,
       denyWrite: [],
     },
   }

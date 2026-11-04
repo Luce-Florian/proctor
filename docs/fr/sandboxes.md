@@ -44,7 +44,7 @@ disque de l'hôte                           ce qu'un essai voit sous srt
 | `denyRead` | répertoire parent des racines d'essai (`os.tmpdir()`, chemin donné et chemin réel) | un essai ne lit pas la racine d'un autre essai (`-j 2`) |
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (ceux qui existent) | `/tmp/claude-<uid>` contient les sorties des sessions Claude de l'hôte ; disques montés |
 | `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | jamais la racine elle-même : sous Linux, srt remonte en lecture seule un répertoire rouvert après les binds en écriture, ce qui rendrait l'espace de travail non modifiable et bloquerait bubblewrap au démarrage |
-| `allowRead` | `vendor/seccomp` de `@anthropic-ai/sandbox-runtime`, sous Linux | srt y lance son filtre seccomp, dans le sandbox, et `node_modules` est souvent sous le home masqué |
+| `allowRead` | le paquet `@anthropic-ai/sandbox-runtime` | sous Linux, srt lance son filtre seccomp depuis `vendor/seccomp`, dans le sandbox, et `node_modules` est souvent sous le home masqué |
 | `allowRead` | répertoire du binaire de l'agent, `.allowRead()`, `.allowWrite()` | ce que déclarent l'agent et la suite |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | rien d'autre ; srt ajoute stdio et `/tmp/claude`, illisible ici |
 | `allowedDomains` | l'API du modèle pour le profil, `.allowDomains()` | tout le reste est bloqué par le proxy srt |

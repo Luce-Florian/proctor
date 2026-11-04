@@ -44,7 +44,7 @@ host disk                                  what a trial sees under srt
 | `denyRead` | parent directory of the trial roots (`os.tmpdir()`, given path and real path) | a trial does not read another trial's root (`-j 2`) |
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (those that exist) | `/tmp/claude-<uid>` holds the outputs of the host's Claude sessions; mounted disks |
 | `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | never the root itself: on Linux, srt binds a re-allowed directory back read-only after the writable binds, which would make the workspace read-only and stop bubblewrap at startup |
-| `allowRead` | `vendor/seccomp` of `@anthropic-ai/sandbox-runtime`, on Linux | srt runs its seccomp filter from there, inside the sandbox, and `node_modules` often sits under the hidden home |
+| `allowRead` | the `@anthropic-ai/sandbox-runtime` package | on Linux srt runs its seccomp filter from `vendor/seccomp`, inside the sandbox, and `node_modules` often sits under the hidden home |
 | `allowRead` | directory of the agent binary, `.allowRead()`, `.allowWrite()` | what the agent and the suite declare |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | nothing else; srt adds stdio and `/tmp/claude`, unreadable here |
 | `allowedDomains` | the model API for the profile, `.allowDomains()` | everything else is blocked by the srt proxy |

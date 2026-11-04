@@ -17,11 +17,11 @@ const REQUIRED_TOOLS: Readonly<Record<string, readonly string[]>> = {
 }
 
 /**
- * Directory, relative to the srt CLI, of the `apply-seccomp` binaries srt runs inside bubblewrap on Linux. It sits in
- * `node_modules`, often under the hidden host home (a CI checkout under `/home/runner`): without it, the sandbox
- * starts and the command fails with "apply-seccomp: No such file or directory".
+ * The srt package root, relative to its CLI (`dist/cli.js`). On Linux srt runs its `vendor/seccomp/<arch>/apply-seccomp`
+ * inside bubblewrap; the package sits in `node_modules`, often under the hidden host home (a CI checkout under
+ * `/home/runner`): without it, the sandbox starts and the command fails with "apply-seccomp: No such file or directory".
  */
-const SECCOMP_DIR = join("..", "vendor", "seccomp")
+const SRT_PACKAGE = ".."
 
 export interface SrtOptions extends LayoutOptions {
   /** Path of the `srt` CLI script. Default: the one of the `@anthropic-ai/sandbox-runtime` dependency. */
@@ -81,10 +81,9 @@ export class SrtSandbox implements Sandbox {
     return releaseLayout(dirname(workspace.cwd))
   }
 
-  /** Adds what srt itself reads inside the sandbox: its seccomp binaries on Linux. */
+  /** Adds what srt itself reads inside the sandbox: its own package, for the seccomp binaries on Linux. */
   #withRuntime(access: SandboxAccess, cli: string): SandboxAccess {
-    if (this.#platform() !== "linux") return access
-    return { ...access, readablePaths: [...access.readablePaths, join(dirname(cli), SECCOMP_DIR)] }
+    return { ...access, readablePaths: [...access.readablePaths, join(dirname(cli), SRT_PACKAGE)] }
   }
 
   #platform(): string {

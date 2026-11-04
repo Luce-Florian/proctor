@@ -15,18 +15,16 @@ async function fakeToolsDir(tools: readonly string[] = ["rg"]) {
   return dir
 }
 
-const fakeRgDir = (): Promise<string> => fakeToolsDir()
-
-/** The `allowRead` list of the policy written for `ws`. */
-async function allowReadOf(ws: { cwd: string }): Promise<readonly string[]> {
-  return (JSON.parse(await readFile(join(ws.cwd, "..", "srt-settings.json"), "utf8")) as SrtSettings).filesystem.allowRead
+/** The policy written for `ws`. */
+async function settingsOf(ws: { cwd: string }): Promise<SrtSettings> {
+  return JSON.parse(await readFile(join(ws.cwd, "..", "srt-settings.json"), "utf8")) as SrtSettings
 }
 
 describe("srt sandbox", () => {
   it("hides the directory holding the trial roots, and the host temp and volume dirs that exist", async () => {
     const tmpRoot = await tempDir()
     const sandbox = new SrtSandbox({
-      env: { PATH: await fakeRgDir() },
+      env: { PATH: await fakeToolsDir() },
       hostHome: "/Users/me",
       tmpRoot,
       platform: "darwin",
@@ -34,7 +32,7 @@ describe("srt sandbox", () => {
     })
     const ws = await sandbox.create(spec)
 
-    const { denyRead } = (JSON.parse(await readFile(join(ws.cwd, "..", "srt-settings.json"), "utf8")) as SrtSettings).filesystem
+    const { denyRead } = (await settingsOf(ws)).filesystem
     expect(denyRead).toEqual(expect.arrayContaining(["/Users/me", tmpRoot, realpathSync(tmpRoot), "/tmp"]))
     expect(denyRead.every((path: string) => existsSync(path) || path === "/Users/me")).toBe(true)
     await sandbox.destroy(ws)
@@ -42,7 +40,7 @@ describe("srt sandbox", () => {
 
   it("writes its settings next to the workspace and wraps commands with the srt CLI", async () => {
     const sandbox = new SrtSandbox({
-      env: { PATH: await fakeRgDir() },
+      env: { PATH: await fakeToolsDir() },
       hostHome: "/Users/me",
       tmpRoot: await tempDir(),
       platform: "darwin",
@@ -51,7 +49,7 @@ describe("srt sandbox", () => {
     const ws = await sandbox.create(spec)
 
     const settings = join(ws.cwd, "..", "srt-settings.json")
-    expect((JSON.parse(await readFile(settings, "utf8")) as SrtSettings).network.allowedDomains).toEqual(["api.anthropic.com"])
+    expect((await settingsOf(ws)).network.allowedDomains).toEqual(["api.anthropic.com"])
     expect(ws.wrap?.({ file: "claude", args: ["-p", "hi"] })).toEqual({
       file: process.execPath,
       args: ["/srt/cli.js", "--settings", settings, "--", "claude", "-p", "hi"],
@@ -62,20 +60,18 @@ describe("srt sandbox", () => {
     expect(await exists(settings)).toBe(false)
   })
 
-  it("lets srt read its own seccomp binaries on Linux, which may sit under the hidden host home", async () => {
-    const options = { hostHome: "/home/runner", cli: "/home/runner/work/app/node_modules/srt/dist/cli.js" }
-    const linux = new SrtSandbox({
-      ...options,
+  it("lets srt read its own package, whose seccomp binaries it runs on Linux, even under the hidden host home", async () => {
+    const sandbox = new SrtSandbox({
       env: { PATH: await fakeToolsDir(["bwrap", "socat", "rg"]) },
+      hostHome: "/home/runner",
       tmpRoot: await tempDir(),
       platform: "linux",
+      cli: "/home/runner/work/app/node_modules/srt/dist/cli.js",
     })
-    const darwin = new SrtSandbox({ ...options, env: { PATH: await fakeRgDir() }, tmpRoot: await tempDir(), platform: "darwin" })
-    const [onLinux, onDarwin] = [await linux.create(spec), await darwin.create(spec)]
+    const ws = await sandbox.create(spec)
 
-    expect(await allowReadOf(onLinux)).toContain("/home/runner/work/app/node_modules/srt/vendor/seccomp")
-    expect(await allowReadOf(onDarwin)).not.toContain("/home/runner/work/app/node_modules/srt/vendor/seccomp")
-    await Promise.all([linux.destroy(onLinux), darwin.destroy(onDarwin)])
+    expect((await settingsOf(ws)).filesystem.allowRead).toContain("/home/runner/work/app/node_modules/srt")
+    await sandbox.destroy(ws)
   })
 
   it("says what to install, or to fall back to local-temp, when srt cannot run", async () => {
