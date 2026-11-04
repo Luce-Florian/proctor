@@ -1,6 +1,7 @@
 /**
  * Runs the real `srt` CLI on shell commands, without LLM nor network: the policy srtSettings() writes must
- * actually deny reads outside the trial and writes outside the workspace. Skipped where srt cannot run.
+ * actually deny reads outside the trial and writes outside the workspace. Skipped where srt cannot run, unless
+ * PROCTOR_REQUIRE_SRT=1 (set by CI): then a missing tool fails the run instead of skipping it silently.
  */
 import { existsSync } from "node:fs"
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
@@ -22,7 +23,11 @@ function unavailable(): string | undefined {
 
 const reason = unavailable()
 /** Seatbelt refuses the access; bubblewrap hides a denied directory behind an empty one. */
-const denial = platform() === "darwin" ? /Operation not permitted/ : /No such file|Operation not permitted|Read-only/
+const denial =
+  platform() === "darwin"
+    ? /Operation not permitted/
+    : /No such file|Directory nonexistent|Operation not permitted|Permission denied|Read-only/
+if (reason && process.env.PROCTOR_REQUIRE_SRT === "1") throw new Error(`PROCTOR_REQUIRE_SRT=1 but srt cannot run here: ${reason}.`)
 if (reason) console.warn(`Skipping the srt integration test: ${reason}.`)
 
 // A host-home stand-in outside every temp dir, so that only the home rule can hide it.
@@ -50,6 +55,11 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
     const [ws, other] = [await sandbox.create({ label: "srt a", access }), await sandbox.create({ label: "srt b", access })]
     await writeFile(join(other.cwd, "other-trial.txt"), "other trial output")
     try {
+      // First: the sandbox starts and the workspace is writable. A sandbox that refuses to start would make every
+      // denial below pass for the wrong reason.
+      const inside = await sh(ws, "echo inside > probe.txt && cat probe.txt && echo home > $HOME/h && echo tmp > $TMPDIR/t")
+      expect(inside).toMatchObject({ code: 0, output: expect.stringContaining("inside") })
+
       const home = await sh(ws, `cat ${join(fakeHome, "id_ed25519")}`)
       expect(home.code).not.toBe(0)
       expect(home.output).not.toContain("PRIVATE KEY")
@@ -65,9 +75,6 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
       expect(escape.output).toMatch(denial)
       expect(existsSync(join(outside, "escaped.txt"))).toBe(false)
 
-      const inside = await sh(ws, "echo inside > probe.txt && cat probe.txt && echo home > $HOME/h && echo tmp > $TMPDIR/t")
-      expect(inside).toMatchObject({ code: 0, output: expect.stringContaining("inside") })
-
       const declared = await sh(ws, `echo cache > ${join(writable, "c")} && cat ${join(writable, "c")}`)
       expect(declared).toMatchObject({ code: 0, output: expect.stringContaining("cache") })
 
@@ -76,6 +83,34 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
       const command = ws.wrap?.({ file: "/bin/sh", args: ["-c", "wc -c"] })
       const piped = command && (await runProcess(command, { cwd: ws.cwd, env: ws.env, input: prompt, signal: AbortSignal.timeout(30_000) }))
       expect(Number(piped?.stdout.trim())).toBe(Buffer.byteLength(prompt))
+    } finally {
+      await sandbox.destroy(ws)
+      await sandbox.destroy(other)
+    }
+  }, 60_000)
+
+  it("runs in a git workspace, as a gitRepo fixture leaves it, and still guards its dotfiles (issue #16)", async () => {
+    const sandbox = new SrtSandbox({ hostHome: fakeHome, tmpRoot: await tempDir() })
+    const [ws, other] = [
+      await sandbox.create({ label: "srt git", access: NO_ACCESS }),
+      await sandbox.create({ label: "srt peer", access: NO_ACCESS }),
+    ]
+    await writeFile(join(other.cwd, "other-trial.txt"), "other trial output")
+    const git = await runProcess(
+      { file: "git", args: ["init", "-q"] },
+      { cwd: ws.cwd, env: { PATH: process.env.PATH ?? "" }, signal: AbortSignal.timeout(30_000) },
+    )
+    expect(git.code).toBe(0)
+    try {
+      const work = await sh(ws, "echo change > change.txt && cat change.txt && git status --porcelain")
+      expect(work).toMatchObject({ code: 0, output: expect.stringContaining("change.txt") })
+
+      const dotfile = await sh(ws, "echo '[alias]' > .gitconfig")
+      expect(dotfile.code).not.toBe(0)
+
+      const otherTrial = await sh(ws, `cat ${join(other.cwd, "other-trial.txt")}`)
+      expect(otherTrial.code).not.toBe(0)
+      expect(otherTrial.output).not.toContain("other trial output")
     } finally {
       await sandbox.destroy(ws)
       await sandbox.destroy(other)
