@@ -12,7 +12,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 | Isolation écrite dans le rapport | `full` | `degraded`, plus un avertissement dans la console |
 | HOME, TMPDIR, `XDG_*` | temporaires | temporaires |
 | Env | `PATH` sans les entrées sous le home de l'hôte, `LANG`, `LC_*`, `TERM`, `TZ`, `USER`, `LOGNAME` | idem |
-| Lecture | home de l'hôte et répertoires temporaires masqués, sauf la racine de l'essai et les chemins déclarés | tout le disque |
+| Lecture | home de l'hôte et répertoires temporaires masqués, sauf l'espace de travail, le home et le TMPDIR de l'essai, et les chemins déclarés | tout le disque |
 | Écriture | l'espace de travail, le home et le TMPDIR de l'essai, les chemins de `.allowWrite()` | tout le disque |
 | Réseau | domaines déclarés uniquement | ouvert |
 
@@ -37,8 +37,8 @@ disque de l'hôte                           ce qu'un essai voit sous srt
 ├── ~  (home de l'hôte)                    masqué : ~/.ssh, ~/.aws, ~/.claude…
 ├── /tmp, /var/folders, /Volumes           masqué
 ├── os.tmpdir()                            masqué : parent de toutes les racines d'essai
-│   ├── ae-review-basel-a1b2c3/            lisible : la racine de cet essai
-│   │   ├── srt-settings.json              lisible, pas modifiable : la politique
+│   ├── ae-review-basel-a1b2c3/            la racine de cet essai, pas rouverte elle-même
+│   │   ├── srt-settings.json              masqué : la politique, lue par srt hors du sandbox
 │   │   ├── work/                          modifiable : cwd, l'espace de travail
 │   │   ├── home/                          modifiable : HOME, XDG_*, .claude/, .proctor/plugins/
 │   │   └── tmp/                           modifiable : TMPDIR, CLAUDE_CODE_TMPDIR
@@ -53,7 +53,8 @@ disque de l'hôte                           ce qu'un essai voit sous srt
 | `denyRead` | home de l'hôte | `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.claude`… |
 | `denyRead` | répertoire parent des racines d'essai (`os.tmpdir()`, chemin donné et chemin réel) | un essai ne lit pas la racine d'un autre essai (`-j 2`) |
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (ceux qui existent) | `/tmp/claude-<uid>` contient les sorties des sessions Claude de l'hôte ; disques montés |
-| `allowRead` | racine de l'essai | espace de travail, home, TMPDIR et fichier de politique |
+| `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | jamais la racine elle-même : sous Linux, srt remonte en lecture seule un répertoire rouvert après les binds en écriture, ce qui rendrait l'espace de travail non modifiable et bloquerait bubblewrap au démarrage |
+| `allowRead` | le paquet `@anthropic-ai/sandbox-runtime` | sous Linux, srt lance son filtre seccomp depuis `vendor/seccomp`, dans le sandbox, et `node_modules` est souvent sous le home masqué |
 | `allowRead` | répertoire du binaire de l'agent, `.allowRead()`, `.allowWrite()` | ce que déclarent l'agent et la suite |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | rien d'autre ; srt ajoute stdio et `/tmp/claude`, illisible ici |
 | `allowedDomains` | l'API du modèle pour le profil, `.allowDomains()` | tout le reste est bloqué par le proxy srt |
@@ -79,4 +80,4 @@ Un flux privé exige aussi un identifiant : hors périmètre.
 
 - `srt` vient de la dépendance `@anthropic-ai/sandbox-runtime`, pas d'une installation globale.
 - Il nécessite `rg` sur macOS, et `bwrap`, `socat` et `rg` sur Linux. Sinon `create` échoue et dit quoi installer, ou de passer `--sandbox local-temp`.
-- `test/srt.integration.test.ts` exécute le vrai `srt`, sans LLM ni réseau : lire un faux home et un autre essai est refusé, écrire hors de l'espace de travail est refusé, l'espace de travail et `.allowWrite()` sont accessibles en écriture. Il est ignoré, avec un message, là où srt ne fonctionne pas.
+- `test/srt.integration.test.ts` exécute le vrai `srt`, sans LLM ni réseau : lire un faux home et un autre essai est refusé, écrire hors de l'espace de travail est refusé, l'espace de travail et `.allowWrite()` sont accessibles en écriture. Il est ignoré, avec un message, là où srt ne fonctionne pas, sauf avec `PROCTOR_REQUIRE_SRT=1` : la CI le pose et installe `bubblewrap`, `socat` et `ripgrep`, donc la politique est vérifiée sous Linux à chaque build.

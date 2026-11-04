@@ -12,7 +12,7 @@ export interface SrtSettings {
   }
 }
 
-/** Host directories hidden from every trial, besides its own root. */
+/** Host directories hidden from every trial, besides its own workspace, home and TMPDIR. */
 export interface HiddenHostPaths {
   /** The host home: `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.claude`... */
   readonly home: string
@@ -29,8 +29,10 @@ export const SHARED_TEMP_DIRS: readonly string[] = ["/tmp", "/private/tmp", "/va
 
 /**
  * The `srt` policy of one trial, deny-broad then allow-narrow (srt lets `allowRead` win over `denyRead`):
- * - reads: the host home and the shared temp dirs are hidden, except the trial's own temp root and the paths
- *   the agent or suite declared (its binary, a hook script, a writable path);
+ * - reads: the host home and the shared temp dirs are hidden, except the trial's own workspace, home and TMPDIR,
+ *   and the paths the agent or suite declared (its binary, a hook script, a writable path). Not the trial root:
+ *   on Linux, srt binds an allowed read directory back read-only after the writable binds, so re-allowing the root
+ *   would turn the workspace read-only and bubblewrap could not create its deny placeholders there (issue #16);
  * - writes: only the workspace, the sandbox home, the sandbox TMPDIR and the declared writable paths, never the
  *   settings file itself;
  * - network: only the declared domains, e.g. the model API. Paths are absolute: `~` would expand to the sandbox home.
@@ -40,13 +42,13 @@ export const SHARED_TEMP_DIRS: readonly string[] = ["/tmp", "/private/tmp", "/va
  * // { network: { allowedDomains: ["api.anthropic.com"], ... }, filesystem: { denyRead: ["/Users/me", "/tmp"], ... } }
  */
 export function srtSettings(layout: TempLayout, access: SandboxAccess, hidden: HiddenHostPaths): SrtSettings {
-  const writable = access.writablePaths ?? []
+  const writes = [...new Set([layout.cwd, layout.home, layout.tmp, ...(access.writablePaths ?? [])])]
   return {
     network: { allowedDomains: [...access.allowedDomains], deniedDomains: [] },
     filesystem: {
       denyRead: [...new Set([hidden.home, ...hidden.sharedTemp])],
-      allowRead: [...new Set([layout.root, ...access.readablePaths, ...writable])],
-      allowWrite: [...new Set([layout.cwd, layout.home, layout.tmp, ...writable])],
+      allowRead: [...new Set([...writes, ...access.readablePaths])],
+      allowWrite: writes,
       denyWrite: [],
     },
   }
