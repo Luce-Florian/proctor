@@ -8,11 +8,18 @@ import { SrtSandbox } from "./sandbox.ts"
 import { exists, sandboxSpec as spec } from "#test/adapters.ts"
 import { tempDir } from "#test/helpers.ts"
 
-/** A PATH entry holding an `rg`, so the srt preflight passes without ripgrep installed. */
-async function fakeRgDir() {
+/** A PATH entry holding the host tools srt checks for, so its preflight passes without them installed. */
+async function fakeToolsDir(tools: readonly string[] = ["rg"]) {
   const dir = await tempDir()
-  await writeFile(join(dir, "rg"), "")
+  await Promise.all(tools.map((tool) => writeFile(join(dir, tool), "")))
   return dir
+}
+
+const fakeRgDir = (): Promise<string> => fakeToolsDir()
+
+/** The `allowRead` list of the policy written for `ws`. */
+async function allowReadOf(ws: { cwd: string }): Promise<readonly string[]> {
+  return (JSON.parse(await readFile(join(ws.cwd, "..", "srt-settings.json"), "utf8")) as SrtSettings).filesystem.allowRead
 }
 
 describe("srt sandbox", () => {
@@ -53,6 +60,22 @@ describe("srt sandbox", () => {
     expect(ws.env.CLAUDE_CODE_TMPDIR).toBe(ws.env.TMPDIR)
     await sandbox.destroy(ws)
     expect(await exists(settings)).toBe(false)
+  })
+
+  it("lets srt read its own seccomp binaries on Linux, which may sit under the hidden host home", async () => {
+    const options = { hostHome: "/home/runner", cli: "/home/runner/work/app/node_modules/srt/dist/cli.js" }
+    const linux = new SrtSandbox({
+      ...options,
+      env: { PATH: await fakeToolsDir(["bwrap", "socat", "rg"]) },
+      tmpRoot: await tempDir(),
+      platform: "linux",
+    })
+    const darwin = new SrtSandbox({ ...options, env: { PATH: await fakeRgDir() }, tmpRoot: await tempDir(), platform: "darwin" })
+    const [onLinux, onDarwin] = [await linux.create(spec), await darwin.create(spec)]
+
+    expect(await allowReadOf(onLinux)).toContain("/home/runner/work/app/node_modules/srt/vendor/seccomp")
+    expect(await allowReadOf(onDarwin)).not.toContain("/home/runner/work/app/node_modules/srt/vendor/seccomp")
+    await Promise.all([linux.destroy(onLinux), darwin.destroy(onDarwin)])
   })
 
   it("says what to install, or to fall back to local-temp, when srt cannot run", async () => {

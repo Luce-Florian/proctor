@@ -4,7 +4,7 @@ import { createRequire } from "node:module"
 import { homedir, platform } from "node:os"
 import { dirname, join } from "node:path"
 import { realPath } from "../../../shared/fs.ts"
-import type { Sandbox, SandboxSpec } from "../../../ports/sandbox.ts"
+import type { Sandbox, SandboxAccess, SandboxSpec } from "../../../ports/sandbox.ts"
 import type { Command, Workspace } from "../../../ports/workspace.ts"
 import { which } from "../../process.ts"
 import { allocateLayout, layoutEnv, releaseLayout, type LayoutOptions } from "../temp-layout.ts"
@@ -15,6 +15,13 @@ const REQUIRED_TOOLS: Readonly<Record<string, readonly string[]>> = {
   darwin: ["rg"],
   linux: ["bwrap", "socat", "rg"],
 }
+
+/**
+ * Directory, relative to the srt CLI, of the `apply-seccomp` binaries srt runs inside bubblewrap on Linux. It sits in
+ * `node_modules`, often under the hidden host home (a CI checkout under `/home/runner`): without it, the sandbox
+ * starts and the command fails with "apply-seccomp: No such file or directory".
+ */
+const SECCOMP_DIR = join("..", "vendor", "seccomp")
 
 export interface SrtOptions extends LayoutOptions {
   /** Path of the `srt` CLI script. Default: the one of the `@anthropic-ai/sandbox-runtime` dependency. */
@@ -55,7 +62,8 @@ export class SrtSandbox implements Sandbox {
       const settings = join(layout.root, "srt-settings.json")
       const roots = dirname(layout.root)
       const sharedTemp = [roots, realPath(roots), ...SHARED_TEMP_DIRS.filter((dir) => existsSync(dir))]
-      const policy = srtSettings(layout, spec.access, { home: this.#options.hostHome ?? homedir(), sharedTemp })
+      const access = this.#withRuntime(spec.access, cli)
+      const policy = srtSettings(layout, access, { home: this.#options.hostHome ?? homedir(), sharedTemp })
       await writeFile(settings, `${JSON.stringify(policy, null, 2)}\n`)
       const wrap = (command: Command): Command => ({
         file: process.execPath,
@@ -73,10 +81,20 @@ export class SrtSandbox implements Sandbox {
     return releaseLayout(dirname(workspace.cwd))
   }
 
+  /** Adds what srt itself reads inside the sandbox: its seccomp binaries on Linux. */
+  #withRuntime(access: SandboxAccess, cli: string): SandboxAccess {
+    if (this.#platform() !== "linux") return access
+    return { ...access, readablePaths: [...access.readablePaths, join(dirname(cli), SECCOMP_DIR)] }
+  }
+
+  #platform(): string {
+    return this.#options.platform ?? platform()
+  }
+
   /** Checks the host tools srt needs, once, then returns the srt CLI path. */
   #resolveCli(path: string): string {
     if (this.#cli) return this.#cli
-    const os = this.#options.platform ?? platform()
+    const os = this.#platform()
     const tools = REQUIRED_TOOLS[os]
     if (!tools) throw new Error(`srt does not support ${os}: pass --sandbox local-temp (isolation degraded).`)
     const missing = tools.filter((tool) => which(tool, path) === undefined)

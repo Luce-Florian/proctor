@@ -12,7 +12,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 | Isolation written in the report | `full` | `degraded`, plus a console warning |
 | HOME, TMPDIR, `XDG_*` | temporary | temporary |
 | Env | `PATH` without the entries under the host home, `LANG`, `LC_*`, `TERM`, `TZ`, `USER`, `LOGNAME` | same |
-| Read | host home and temporary directories hidden, except the trial root and the declared paths | the whole disk |
+| Read | host home and temporary directories hidden, except the trial's workspace, home and TMPDIR, and the declared paths | the whole disk |
 | Write | the trial's workspace, home and TMPDIR, `.allowWrite()` paths | the whole disk |
 | Network | declared domains only | open |
 
@@ -27,8 +27,8 @@ host disk                                  what a trial sees under srt
 ├── ~  (host home)                         hidden: ~/.ssh, ~/.aws, ~/.claude…
 ├── /tmp, /var/folders, /Volumes           hidden
 ├── os.tmpdir()                            hidden: parent of every trial root
-│   ├── ae-review-basel-a1b2c3/            readable: this trial's root
-│   │   ├── srt-settings.json              readable, not writable: the policy
+│   ├── ae-review-basel-a1b2c3/            this trial's root, not re-allowed itself
+│   │   ├── srt-settings.json              hidden: the policy, read by srt outside the sandbox
 │   │   ├── work/                          writable: cwd, the workspace
 │   │   ├── home/                          writable: HOME, XDG_*, .claude/, .proctor/plugins/
 │   │   └── tmp/                           writable: TMPDIR, CLAUDE_CODE_TMPDIR
@@ -43,7 +43,8 @@ host disk                                  what a trial sees under srt
 | `denyRead` | host home | `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.claude`… |
 | `denyRead` | parent directory of the trial roots (`os.tmpdir()`, given path and real path) | a trial does not read another trial's root (`-j 2`) |
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (those that exist) | `/tmp/claude-<uid>` holds the outputs of the host's Claude sessions; mounted disks |
-| `allowRead` | trial root | workspace, home, TMPDIR and policy file |
+| `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | never the root itself: on Linux, srt binds a re-allowed directory back read-only after the writable binds, which would make the workspace read-only and stop bubblewrap at startup |
+| `allowRead` | `vendor/seccomp` of `@anthropic-ai/sandbox-runtime`, on Linux | srt runs its seccomp filter from there, inside the sandbox, and `node_modules` often sits under the hidden home |
 | `allowRead` | directory of the agent binary, `.allowRead()`, `.allowWrite()` | what the agent and the suite declare |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | nothing else; srt adds stdio and `/tmp/claude`, unreadable here |
 | `allowedDomains` | the model API for the profile, `.allowDomains()` | everything else is blocked by the srt proxy |
@@ -69,4 +70,4 @@ A private feed also requires a credential: out of scope.
 
 - `srt` comes from the `@anthropic-ai/sandbox-runtime` dependency, not from a global install.
 - It needs `rg` on macOS, and `bwrap`, `socat` and `rg` on Linux. Otherwise `create` fails and says what to install, or to pass `--sandbox local-temp`.
-- `test/srt.integration.test.ts` runs the real `srt`, without an LLM or network: reading a fake home and another trial is denied, writing outside the workspace is denied, the workspace and `.allowWrite()` are writable. It is skipped, with a message, where srt does not run.
+- `test/srt.integration.test.ts` runs the real `srt`, without an LLM or network: reading a fake home and another trial is denied, writing outside the workspace is denied, the workspace and `.allowWrite()` are writable. It is skipped, with a message, where srt does not run, except with `PROCTOR_REQUIRE_SRT=1`: CI sets it and installs `bubblewrap`, `socat` and `ripgrep`, so the policy is checked on Linux at every build.
