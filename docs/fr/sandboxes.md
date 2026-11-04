@@ -18,6 +18,16 @@ npx proctor run path/to/review.eval.ts --agent claude-code --sandbox local-temp 
 
 `fake` (`src/testing/`) n'exécute rien : isolation `none`, la valeur par défaut avec `--agent fake`.
 
+## Vérifier la sandbox sans modèle
+
+Avec une vraie sandbox, `--agent fake` y lance une commande shell, dans l'espace de travail, après les fixtures, comme le ferait un agent au démarrage : la sandbox doit démarrer et l'espace de travail doit être modifiable. Un dry run vérifie donc la sandbox de l'hôte, par exemple au build d'une CI, sans token et sans coût.
+
+```sh
+npx proctor run examples/hello.eval.ts --agent fake --sandbox srt
+```
+
+Quand la vérification échoue, l'essai finit en `other` avec un message qui commence par `The sandbox did not run a command in the workspace`, suivi de l'erreur de la sandbox elle-même. Une suite avec `judge()` finit aussi en `other` sous le juge fake, par construction : un job de CI distingue les deux par ce message dans le CTRF.
+
 ## La politique `srt`
 
 La politique d'un essai (`<trial root>/srt-settings.json`, hors des répertoires accessibles en écriture) refuse largement, puis ouvre étroitement : dans srt, `allowRead` l'emporte sur `denyRead`.

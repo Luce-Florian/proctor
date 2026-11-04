@@ -2,6 +2,7 @@ import { join } from "node:path"
 import { ClaudeCodeAdapter } from "../adapters/agents/claude-code/adapter.ts"
 import { CLAUDE_AUTH_PROFILES } from "../adapters/agents/claude-code/credentials.ts"
 import { LocalTempSandbox } from "../adapters/sandboxes/local-temp/sandbox.ts"
+import { probeSandbox } from "../adapters/sandboxes/probe.ts"
 import { SrtSandbox } from "../adapters/sandboxes/srt/sandbox.ts"
 import { resolveCredential } from "../auth/credential-resolver.ts"
 import type { AgentAdapter } from "../ports/agent.ts"
@@ -31,7 +32,14 @@ export type Registry<T> = Readonly<Record<string, (options: FactoryOptions) => T
 
 /** `--agent <id>`. Add an agent by adding its adapter file and one line here. */
 export const agents: Registry<AgentAdapter> = {
-  fake: () => new FakeAgentAdapter(),
+  // Probes the sandbox before answering: `--agent fake --sandbox srt` checks srt for free, the fake sandbox runs nothing.
+  fake: () =>
+    new FakeAgentAdapter({
+      reply: async (input, workspace) => {
+        await probeSandbox(workspace, input.signal)
+        return `echo: ${input.prompt}`
+      },
+    }),
   "claude-code": ({ auth, outDir, env, pluginRoots = [] }) =>
     new ClaudeCodeAdapter({
       credential: resolveCredential("claude-code", CLAUDE_AUTH_PROFILES, env, auth),

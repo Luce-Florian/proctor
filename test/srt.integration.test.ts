@@ -11,6 +11,7 @@ import { afterAll, describe, expect, it } from "vitest"
 import { NO_ACCESS, type Workspace } from "@fluce/proctor"
 import { runProcess, which } from "../src/adapters/process.ts"
 import { SrtSandbox } from "../src/adapters/sandboxes/srt/sandbox.ts"
+import { main } from "../src/cli/main.ts"
 import { gitIn, tempDir } from "#test/helpers.ts"
 
 /** Why srt cannot run here, or undefined when it can. */
@@ -104,5 +105,20 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
     } finally {
       await sandbox.destroy(ws)
     }
+  }, 60_000)
+
+  it("runs a dry run, --agent fake --sandbox srt, through the real sandbox", async () => {
+    const out = await tempDir()
+    const hello = join(packageDir, "examples", "hello.eval.ts")
+    const stdout: string[] = []
+    const io = { stdout: { write: (s: string) => stdout.push(s) }, stderr: { write: () => undefined } }
+
+    const code = await main(["run", hello, "--agent", "fake", "--sandbox", "srt", "--out", out], {
+      ...io,
+      env: { PATH: process.env.PATH ?? "" },
+    })
+
+    expect(stdout.join("")).toContain("PASS  greets-world [baseline] #1")
+    expect(code).toBe(0)
   }, 60_000)
 })
