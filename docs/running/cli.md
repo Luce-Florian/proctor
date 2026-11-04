@@ -17,7 +17,7 @@ Runs a `*.eval.ts`, or a theme in the [legacy bash bench format](../legacy/loade
 | `-j, --concurrency <n>` | trials in parallel (default 1); the report keeps the matrix order |
 | `--case <id>` / `--variant <name>` | filters the matrix; repeatable or comma-separated (`--case a,b`), before or after `<file>` |
 | `--agent <id>` | `claude-code` or `fake` |
-| `--sandbox <id>` | `srt` by default (isolation `full`); `local-temp` on request (isolation `degraded`, with a warning); `fake` by default with `--agent fake` |
+| `--sandbox <id>` | `srt` by default (isolation `full`); `local-temp` on request (isolation `degraded`, with a warning); `fake` by default with `--agent fake`, which checks a real sandbox when one is given ([sandboxes](../sandboxes.md#checking-the-sandbox-without-a-model)) |
 | `--auth <profile>` | forces the auth profile; default: the first credential found in the environment (only `oauth` is validated) |
 | `--plugin-root <dir>` | directory searched for a bare name in `.plugins("sdlc")`; repeatable, the first one that contains `<dir>/sdlc` wins |
 | `--out <dir>` | results directory (default `results`); `stream-json` transcripts go to `<out>/transcripts/` |

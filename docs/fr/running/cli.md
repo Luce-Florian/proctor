@@ -17,7 +17,7 @@ Exécute un `*.eval.ts`, ou un thème au [format du banc bash historique](../leg
 | `-j, --concurrency <n>` | essais en parallèle (1 par défaut) ; le rapport garde l'ordre de la matrice |
 | `--case <id>` / `--variant <name>` | filtre la matrice ; répétable ou séparé par des virgules (`--case a,b`), avant ou après `<file>` |
 | `--agent <id>` | `claude-code` ou `fake` |
-| `--sandbox <id>` | `srt` par défaut (isolation `full`) ; `local-temp` sur demande (isolation `degraded`, avec un avertissement) ; `fake` par défaut avec `--agent fake` |
+| `--sandbox <id>` | `srt` par défaut (isolation `full`) ; `local-temp` sur demande (isolation `degraded`, avec un avertissement) ; `fake` par défaut avec `--agent fake`, qui vérifie une vraie sandbox quand on en donne une ([sandboxes](../sandboxes.md#verifier-la-sandbox-sans-modele)) |
 | `--auth <profile>` | force le profil d'authentification ; par défaut : le premier identifiant trouvé dans l'environnement (seul `oauth` est validé) |
 | `--plugin-root <dir>` | répertoire où chercher un nom nu de `.plugins("sdlc")` ; répétable, le premier qui contient `<dir>/sdlc` l'emporte |
 | `--out <dir>` | répertoire des résultats (`results` par défaut) ; les transcripts `stream-json` vont dans `<out>/transcripts/` |
