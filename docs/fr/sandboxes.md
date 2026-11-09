@@ -80,4 +80,5 @@ Un flux privé exige aussi un identifiant : hors périmètre.
 
 - `srt` vient de la dépendance `@anthropic-ai/sandbox-runtime`, pas d'une installation globale.
 - Il nécessite `rg` sur macOS, et `bwrap`, `socat` et `rg` sur Linux. Sinon `create` échoue et dit quoi installer, ou de passer `--sandbox local-temp`.
+- Il refuse Windows natif : lancez proctor dans WSL2, voir [Windows (WSL2)](./windows.md).
 - `test/srt.integration.test.ts` exécute le vrai `srt`, sans LLM ni réseau : lire un faux home et un autre essai est refusé, écrire hors de l'espace de travail est refusé, l'espace de travail et `.allowWrite()` sont accessibles en écriture. Il est ignoré, avec un message, là où srt ne fonctionne pas, sauf avec `PROCTOR_REQUIRE_SRT=1` : la CI le pose et installe `bubblewrap`, `socat` et `ripgrep`, donc la politique est vérifiée sous Linux à chaque build.

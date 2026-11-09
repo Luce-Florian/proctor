@@ -38,6 +38,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --case <case-id> --re
 
 - `suites/isolation-probe.eval.ts` checks that the sandbox holds: see [Isolation probe](./agents/claude-code/isolation-probe.md).
 - The `srt` sandbox needs `rg` on macOS, and `bwrap`, `socat` and `rg` on Linux: see [Sandboxes](./sandboxes.md).
+- On Windows, proctor runs inside WSL2: see [Windows (WSL2)](./windows.md).
 
 ## Next
 
