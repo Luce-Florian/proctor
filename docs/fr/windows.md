@@ -8,7 +8,7 @@ flowchart LR
         PS["PowerShell : wsl, installation"]
         C[("Disque Windows C:")]
         subgraph VM["VM WSL2, partagée par toutes les distributions"]
-            subgraph Ubuntu["Distribution Ubuntu : tout ce dont proctor a besoin"]
+            subgraph Ubuntu["Distribution Ubuntu-24.04 : tout ce dont proctor a besoin"]
                 R["~/votre-depot, node, claude, bwrap, socat, rg"]
                 T["un essai srt : workspace, home, tmp"]
                 R -- "npx proctor run" --> T
@@ -42,10 +42,12 @@ flowchart LR
 Dans PowerShell, en administrateur, puis redémarrer :
 
 ```powershell
-wsl --install                 # WSL2 + Ubuntu
-wsl -l -v                     # VERSION must be 2
-wsl --set-version Ubuntu 2    # only if it shows 1
+wsl --install -d Ubuntu-24.04          # WSL2 + Ubuntu 24.04
+wsl -l -v                              # VERSION must be 2
+wsl --set-version Ubuntu-24.04 2       # only if it shows 1
 ```
+
+Ubuntu 24.04 est la version vérifiée ici. La distribution `Ubuntu` sans version suit la dernière LTS : sur le runner GitHub `ubuntu-26.04`, srt échoue aujourd'hui (voir [Dépannage](#depannage)), et personne n'a vérifié la 26.04 sous WSL.
 
 Ouvrez le terminal Ubuntu (menu Démarrer, ou `wsl` dans PowerShell). Toutes les commandes suivantes s'y exécutent.
 
@@ -90,7 +92,7 @@ npm i -D @fluce/proctor
 | `~/<repo>` (système de fichiers Linux) | oui |
 | `/mnt/c/Users/<vous>/<repo>` (disque Windows) | non : lent, Microsoft le déconseille ([Microsoft](https://learn.microsoft.com/fr-fr/windows/wsl/filesystems)) |
 
-Vous modifiez aussi le code dans WSL : depuis Windows, les fichiers sont sous `\\wsl$\Ubuntu\home\<vous>`.
+Vous modifiez aussi le code dans WSL : depuis Windows, les fichiers sont sous `\\wsl$\Ubuntu-24.04\home\<vous>`.
 
 ## 5. Première exécution
 
@@ -140,7 +142,7 @@ Docker Desktop tourne dans sa propre distribution `docker-desktop`, dans la mêm
 
 | Point | À faire |
 |---|---|
-| Distribution par défaut | `wsl --set-default Ubuntu` : `wsl -l -v` affiche `*` devant Ubuntu, jamais devant `docker-desktop` |
+| Distribution par défaut | `wsl --set-default Ubuntu-24.04` : `wsl -l -v` affiche `*` devant Ubuntu, jamais devant `docker-desktop` |
 | Docker dans Ubuntu | passer par l'intégration de Docker Desktop (Settings > Resources > WSL Integration) ; ne pas installer en plus Docker Engine dans Ubuntu ([Docker](https://docs.docker.com/desktop/features/wsl/)) |
 | Mémoire | une seule VM pour toutes les distributions : Docker et les essais la partagent. `memory=` dans `%UserProfile%\.wslconfig`, 50 % de la RAM par défaut ([Microsoft](https://learn.microsoft.com/fr-fr/windows/wsl/wsl-config)) ; baissez `-j` si les essais manquent de mémoire |
 | `wsl --shutdown` | arrête aussi Docker Desktop : nécessaire après une modification de `wsl.conf` |
@@ -167,6 +169,7 @@ Ce que `local-temp` garde, sur tout OS : un `HOME` et un `CLAUDE_CONFIG_DIR` tem
 | `srt does not support win32` | proctor est lancé depuis PowerShell ou CMD | le lancer dans le terminal WSL |
 | `srt needs socat on PATH (outside your home directory)` | outil absent, ou installé sous le home (`~/.local/bin`, `~/.cargo/bin`) | `sudo apt-get install -y bubblewrap socat ripgrep` |
 | la ligne `bwrap --unshare-all …` échoue | espaces de noms utilisateur restreints, comme sur les runners GitHub Ubuntu 24.04 ; non vérifié sous WSL | `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` |
+| `apply-seccomp: write /proc/self/setgroups (nested userns is capability-restricted; caller must provide CAP_SYS_ADMIN)` | vu sur le runner GitHub `ubuntu-26.04` avec srt 0.0.78, sysctl ci-dessus appliqué ; non vérifié sous WSL | pas encore de correctif : utiliser Ubuntu 24.04 |
 | `"claude" not found on PATH` | Claude Code installé seulement sous Windows | l'installer dans WSL ; `which -a claude` doit afficher un chemin Linux, pas `/mnt/c/…` |
 | `No credential for claude-code` | token exporté dans un autre shell, ou dans PowerShell | `export CLAUDE_CODE_OAUTH_TOKEN=…` dans le shell WSL |
 | `claude refused the credential CLAUDE_CODE_OAUTH_TOKEN` | token invalide ou expiré | relancer `claude setup-token` |

@@ -8,7 +8,7 @@ flowchart LR
         PS["PowerShell: wsl, setup"]
         C[("Windows drive C:")]
         subgraph VM["WSL2 VM, shared by every distro"]
-            subgraph Ubuntu["Ubuntu distro: everything proctor needs"]
+            subgraph Ubuntu["Ubuntu-24.04 distro: everything proctor needs"]
                 R["~/your-repo, node, claude, bwrap, socat, rg"]
                 T["one srt trial: workspace, home, tmp"]
                 R -- "npx proctor run" --> T
@@ -42,10 +42,12 @@ flowchart LR
 In PowerShell, as administrator, then restart:
 
 ```powershell
-wsl --install                 # WSL2 + Ubuntu
-wsl -l -v                     # VERSION must be 2
-wsl --set-version Ubuntu 2    # only if it shows 1
+wsl --install -d Ubuntu-24.04          # WSL2 + Ubuntu 24.04
+wsl -l -v                              # VERSION must be 2
+wsl --set-version Ubuntu-24.04 2       # only if it shows 1
 ```
+
+Ubuntu 24.04 is the version checked here. The plain `Ubuntu` distro follows the latest LTS: on the GitHub `ubuntu-26.04` runner, srt currently fails (see [Troubleshooting](#troubleshooting)), and nobody has checked 26.04 under WSL.
 
 Open the Ubuntu terminal (Start menu, or `wsl` in PowerShell). Every following command runs there.
 
@@ -90,7 +92,7 @@ npm i -D @fluce/proctor
 | `~/<repo>` (Linux file system) | yes |
 | `/mnt/c/Users/<you>/<repo>` (Windows drive) | no: slow, Microsoft recommends against it ([Microsoft](https://learn.microsoft.com/en-us/windows/wsl/filesystems)) |
 
-You edit the code in WSL too: from Windows, the files are under `\\wsl$\Ubuntu\home\<you>`.
+You edit the code in WSL too: from Windows, the files are under `\\wsl$\Ubuntu-24.04\home\<you>`.
 
 ## 5. First run
 
@@ -140,7 +142,7 @@ Docker Desktop runs in its own `docker-desktop` distro, in the same WSL2 VM as U
 
 | Point | Do |
 |---|---|
-| Default distro | `wsl --set-default Ubuntu`: `wsl -l -v` shows `*` next to Ubuntu, never next to `docker-desktop` |
+| Default distro | `wsl --set-default Ubuntu-24.04`: `wsl -l -v` shows `*` next to Ubuntu, never next to `docker-desktop` |
 | Docker in Ubuntu | use the Docker Desktop integration (Settings > Resources > WSL Integration); do not also install Docker Engine in Ubuntu ([Docker](https://docs.docker.com/desktop/features/wsl/)) |
 | Memory | one VM for every distro: Docker and the trials share it. `memory=` in `%UserProfile%\.wslconfig`, default 50% of the RAM ([Microsoft](https://learn.microsoft.com/en-us/windows/wsl/wsl-config)); lower `-j` if trials run out of memory |
 | `wsl --shutdown` | stops Docker Desktop too: needed after a `wsl.conf` change |
@@ -167,6 +169,7 @@ What `local-temp` keeps, on every OS: a temporary `HOME` and `CLAUDE_CONFIG_DIR`
 | `srt does not support win32` | proctor runs from PowerShell or CMD | run it in the WSL terminal |
 | `srt needs socat on PATH (outside your home directory)` | tool missing, or installed under the home (`~/.local/bin`, `~/.cargo/bin`) | `sudo apt-get install -y bubblewrap socat ripgrep` |
 | the `bwrap --unshare-all …` line fails | user namespaces restricted, as on the GitHub Ubuntu 24.04 runners; not checked on WSL | `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` |
+| `apply-seccomp: write /proc/self/setgroups (nested userns is capability-restricted; caller must provide CAP_SYS_ADMIN)` | seen on the GitHub `ubuntu-26.04` runner with srt 0.0.78, sysctl above applied; not checked on WSL | no fix known yet: use Ubuntu 24.04 |
 | `"claude" not found on PATH` | Claude Code installed on Windows only | install it in WSL; `which -a claude` must show a Linux path, not `/mnt/c/…` |
 | `No credential for claude-code` | token exported in another shell, or in PowerShell | `export CLAUDE_CODE_OAUTH_TOKEN=…` in the WSL shell |
 | `claude refused the credential CLAUDE_CODE_OAUTH_TOKEN` | token invalid or expired | run `claude setup-token` again |
