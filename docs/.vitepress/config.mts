@@ -23,7 +23,10 @@ interface Section {
 const sections: readonly Section[] = [
   {
     title: { en: "Introduction", fr: "Introduction" },
-    pages: [{ path: "getting-started", title: { en: "Getting started", fr: "Démarrer" } }],
+    pages: [
+      { path: "getting-started", title: { en: "Getting started", fr: "Démarrer" } },
+      { path: "windows", title: { en: "Windows (WSL2)", fr: "Windows (WSL2)" } },
+    ],
   },
   {
     title: { en: "Writing evals", fr: "Écrire des evals" },

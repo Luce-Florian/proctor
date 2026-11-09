@@ -38,6 +38,7 @@ npx proctor run path/to/review.eval.ts --agent claude-code --case <case-id> --re
 
 - `suites/isolation-probe.eval.ts` vérifie que la sandbox (bac à sable) tient : voir [Sonde d'isolation](./agents/claude-code/isolation-probe.md).
 - La sandbox `srt` nécessite `rg` sur macOS, et `bwrap`, `socat` et `rg` sur Linux : voir [Sandboxes](./sandboxes.md).
+- Sous Windows, proctor tourne dans WSL2 : voir [Windows (WSL2)](./windows.md).
 
 ## Ensuite
 

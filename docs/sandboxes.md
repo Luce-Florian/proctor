@@ -80,4 +80,5 @@ A private feed also requires a credential: out of scope.
 
 - `srt` comes from the `@anthropic-ai/sandbox-runtime` dependency, not from a global install.
 - It needs `rg` on macOS, and `bwrap`, `socat` and `rg` on Linux. Otherwise `create` fails and says what to install, or to pass `--sandbox local-temp`.
+- It refuses native Windows: run proctor inside WSL2, see [Windows (WSL2)](./windows.md).
 - `test/srt.integration.test.ts` runs the real `srt`, without an LLM or network: reading a fake home and another trial is denied, writing outside the workspace is denied, the workspace and `.allowWrite()` are writable. It is skipped, with a message, where srt does not run, except with `PROCTOR_REQUIRE_SRT=1`: CI sets it and installs `bubblewrap`, `socat` and `ripgrep`, so the policy is checked on Linux at every build.
