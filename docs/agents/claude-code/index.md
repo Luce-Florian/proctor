@@ -32,7 +32,7 @@ sequenceDiagram
     end
     C-->>H: result event
     Note over H: AgentRunResult: finalText, toolCalls, cost, model
-    Note over H: MCP stubs: their logs prove they served (checkStubsReady), toolCalls get mcp
+    Note over H: MCP stubs: their logs prove they served, toolCalls get mcp (collectStubCalls)
 ```
 
 ```sh

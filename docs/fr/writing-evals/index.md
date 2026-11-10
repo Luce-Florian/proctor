@@ -36,8 +36,8 @@ export default suite("review")
 | Builder | Méthodes |
 |---|---|
 | `suite(name)` | `.variant(name, v => …)`, `.case(id, c => …)`, `.beforeAll(fn)`, `.afterAll(fn)`, `.allowDomains(...)`, `.allowRead(...)`, `.allowWrite(...)`, `.toDefinition()` |
-| variante `v` | `.prompt(text \| c => …)`, `.plugins(...)`, `.mcpServers({…})`, `.model(id)`, `.permissions(p)`, `.settings({…})`, `.beforeEach(fn)`, `.afterEach(fn)` |
-| cas `c` | `.description(t)`, `.context(t)`, `.fixture(f)`, `.expect(grader)`, `.timeout("10m")`, `.skip(reason)` |
+| variante `v` | `.prompt(text \| c => …)`, `.plugins(...)`, `.mcpServers({…})`, `.mcpStub(stub)`, `.model(id)`, `.permissions(p)`, `.settings({…})`, `.beforeEach(fn)`, `.afterEach(fn)` |
+| cas `c` | `.description(t)`, `.context(t)`, `.fixture(f)`, `.mcpStub(stub, s => …)`, `.expect(grader)`, `.timeout("10m")`, `.skip(reason)` |
 
 - Chaque méthode renvoie un nouveau builder : un builder partiel peut être partagé entre suites.
 - Les types se restreignent : une variante sans `.prompt()` ou un cas sans `.expect()` ni `.skip()` ne compile pas (`VariantBuilder<"without-prompt">` n'est pas assignable à `VariantBuilder<"with-prompt">`). La validation zod au chargement reste le filet de sécurité pour les suites écrites en JS.
@@ -50,6 +50,7 @@ export default suite("review")
 |---|---|
 | Fixtures | `directory(url, { into? })`, `gitRepo(url)` : voir [Fixtures](./fixtures.md) |
 | Évaluateurs | déterministes et juge : voir [Évaluateurs](./graders.md) |
+| Serveurs MCP | `mcpStub(name)`, un faux serveur qui répond ce que dit le cas : voir [Stubs MCP](./mcp-stubs.md) |
 | Agents | `claude-code`, `fake` (`src/testing/`) |
 | Sandboxes | `srt`, `local-temp`, `fake` : voir [Sandboxes](../sandboxes.md) |
 

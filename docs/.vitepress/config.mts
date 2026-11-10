@@ -36,6 +36,7 @@ const sections: readonly Section[] = [
       { path: "writing-evals/graders", title: { en: "Graders", fr: "Évaluateurs" } },
       { path: "writing-evals/yes-no-answers", title: { en: "Yes/no answers", fr: "Réponses oui/non" } },
       { path: "writing-evals/judge", title: { en: "LLM judge", fr: "Juge LLM" } },
+      { path: "writing-evals/mcp-stubs", title: { en: "MCP stubs", fr: "Stubs MCP" } },
       { path: "writing-evals/lifecycle", title: { en: "Lifecycle", fr: "Cycle de vie" } },
     ],
   },
