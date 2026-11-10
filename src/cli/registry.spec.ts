@@ -1,8 +1,11 @@
+import { dirname } from "node:path"
 import { describe, expect, it } from "vitest"
+import { agentSandboxAccess } from "../ports/agent.ts"
 import type { Command } from "../ports/workspace.ts"
 import { agents, sandboxIdFor } from "./registry.ts"
 import { input } from "#test/adapters.ts"
 import { tempDir } from "#test/helpers.ts"
+import { stub } from "#test/mcp-stubs.ts"
 
 describe("sandbox selection", () => {
   it("defaults to srt for any real agent, and to the fake sandbox for the fake agent", () => {
@@ -21,6 +24,18 @@ describe("the fake agent of the CLI", () => {
     const result = await fake()?.run(input({ prompt: "hi" }), { cwd, home: cwd, env: { PATH: process.env.PATH ?? "" }, wrap: (c) => c })
 
     expect(result?.finalText).toBe("echo: hi")
+  })
+
+  it("lets the sandbox read the node that runs the MCP stubs in a trial with stubs, as a real agent does", () => {
+    const agent = fake()
+
+    expect(agent && agentSandboxAccess(agent, input({ mcpStubs: [stub("pgsql")] }))?.readablePaths).toEqual([dirname(process.execPath)])
+  })
+
+  it("lets the sandbox read nothing more in a trial without stubs", () => {
+    const agent = fake()
+
+    expect(agent && agentSandboxAccess(agent, input())?.readablePaths).toEqual([])
   })
 
   it("fails the run when the sandbox refuses to start, as a real agent would", async () => {

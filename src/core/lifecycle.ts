@@ -87,7 +87,8 @@ export async function runTrial(plan: TrialPlan, runtime: TrialRuntime): Promise<
       })
     const run = await step("agent run", () => withTimeout(act, testCase.timeoutMs, { signal }))
     agentResult = withoutRaw(run)
-    const gradeContext: GradeContext = { ...ids, result: run, workspace, signal, ...(runtime.judge && { judge: runtime.judge }) }
+    const mcpStubs = variant.mcpStubs.map((stub) => stub.server)
+    const gradeContext: GradeContext = { ...ids, result: run, workspace, mcpStubs, signal, ...(runtime.judge && { judge: runtime.judge }) }
     for (const grader of testCase.graders) {
       const grade = await step(`grader ${grader.id}`, () => grader.grade(gradeContext)).catch((error: unknown) => {
         // No verdict, but the judge calls made before the failure were paid for: the report counts them.

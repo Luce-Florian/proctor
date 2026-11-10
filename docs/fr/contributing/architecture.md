@@ -36,7 +36,8 @@ proctor/
 │   │   ├── mcp-stub/        # stubs MCP neutres vis-à-vis de l'agent, partagés par tous les adaptateurs d'agent
 │   │   │   ├── stub-server.mjs  # serveur MCP d'outils en stdio, built-ins Node seulement, lancé par l'agent dans la sandbox
 │   │   │   ├── materialize.ts   # copie le programme et écrit les configurations dans le home de l'essai, une entrée par stub
-│   │   │   └── call-log.ts      # lit ce que chaque stub a journalisé ; checkStubsReady
+│   │   │   ├── call-log.ts      # lit ce que chaque stub a journalisé ; checkStubsReady ; associe les appels au journal
+│   │   │   └── handshake.ts     # lance chaque stub à travers la sandbox, pour l'agent fake
 │   │   ├── agents/claude-code/
 │   │   │   ├── adapter.ts       # version, prepare, run : env, enveloppe de sandbox, transcript
 │   │   │   ├── credentials.ts   # profils d'authentification, domaines d'API par profil
@@ -56,12 +57,12 @@ proctor/
 │   │                        # tool-used, verdict-equals, answer-shape (+ yes-no-contract), limits, llm-judge (+ judge-protocol)
 │   ├── reporters/           # ctrf(-types), aggregates, markdown et html (sinks CTRF), console, files
 │   ├── loaders/             # registry, eval-ts, legacy-json, legacy-verdicts (oui/non → verdict, forme, juge sur oui)
-│   ├── testing/             # FakeAgentAdapter, FakeSandbox (export "@fluce/proctor/testing")
+│   ├── testing/             # FakeAgentAdapter, FakeSandbox, answerStub (export "@fluce/proctor/testing")
 │   ├── shared/              # utilitaires feuilles (fs, text, ids), importables par chaque couche
 │   └── cli/                 # main (commander), run, report, list, registry, host, interrupt (Ctrl-C)
 ├── eslint/import-boundaries.js
 ├── scripts/fingerprint-claude-home.ts, rejudge.ts
-├── examples/hello.eval.ts   # couvert par test/cli.test.ts
+├── examples/hello.eval.ts, mcp-stub.eval.ts  # couverts par test/cli.test.ts
 ├── suites/isolation-probe.eval.ts  # couvert par test/isolation-probe.test.ts
 └── test/                    # tests de comportement (*.test.ts) ; les specs unitaires sont à côté des sources (*.spec.ts)
     ├── support/             # importé via #test/* : setup.ts (ni réseau, ni identifiant), helpers, ctrf-schema, typecheck

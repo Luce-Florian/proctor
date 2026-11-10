@@ -59,6 +59,7 @@ export function gradeContext(result: Partial<AgentRunResult>, overrides: Partial
     workspace: { cwd: "/", home: "/", env: {} },
     result: { finalText: "", durationMs: 0, turns: 1, toolCalls: [], ...result },
     trial: 1,
+    mcpStubs: [],
     signal: new AbortController().signal,
     ...overrides,
   }

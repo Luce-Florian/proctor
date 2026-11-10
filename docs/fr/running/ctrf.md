@@ -15,7 +15,8 @@ Chaque exécution écrit un document [CTRF](https://ctrf.io) : `<out>/<suite>/<r
     │   ├── status, duration, start, stop, message?, trace?, labels {case, variant, trial}
     │   └── extra     {criteria[], score, costUsd, model, pluginSha, tokens, turns,
     │                  agentDurationMs, transcript, judgeCalls, judgeCostUsd, judgeTokens,
-    │                  judgeModel, judgeTranscripts, judgeTruncated}
+    │                  judgeModel, judgeTranscripts, judgeTruncated,
+    │                  mcpStubCalls?, mcpStubFallbacks?}
     └── extra         {aggregates {baseline, groups[], judge}, ablation[], suiteErrors?}
 ```
 
@@ -32,6 +33,7 @@ Chaque exécution écrit un document [CTRF](https://ctrf.io) : `<out>/<suite>/<r
 | `results.extra.aggregates` | par cas × variante : essais par statut, critères, leurres, principal, score, coût (moyenne ± écart type), durée, appels et coût du juge ; `judge` : total de l'exécution | calculé à partir des seuls `tests`, donc aussi sur un CTRF archivé |
 | `results.extra.ablation` | par cas et variante ≠ `--baseline` : Δ critères, Δ score, Δ coût, Δ taux de réussite | l'écart par rapport à la baseline de `claude plugin eval` |
 | `tests[].extra.judge*` | `judgeCalls` (relances comprises), `judgeCostUsd`, `judgeTokens`, `judgeModel`, `judgeTranscripts`, `judgeTruncated` (`{diffBytes, answerBytes}` omis du prompt) | le coût du juge n'est jamais mêlé au `costUsd` de l'agent |
+| `tests[].extra.mcpStub*` | `mcpStubCalls` (appels auxquels les stubs MCP ont répondu), `mcpStubFallbacks` (parmi eux, ceux auxquels un repli a répondu) ; absents quand aucun stub n'a répondu à un appel | des comptes seulement : un rapport ne contient jamais l'entrée ni la réponse d'un outil ; le résumé, le rapport HTML et la console signalent chaque essai avec un repli |
 | `environment.extra.judge` | `{ id, version, details, sandbox, model? }` | le rapport dit qui a jugé |
 | `results.extra.suiteErrors` | présent seulement si `afterAll` a échoué | une erreur de suite sans essai pour la porter |
 | `results.environment` | `reportName`, `commit`, `branchName` (omis sur un HEAD détaché), `osPlatform`, `osRelease`, `extra.{agent: {id, version, details}, sandbox, isolation}` | le schéma interdit les champs libres hors de `extra` ; `details` porte le profil d'authentification |

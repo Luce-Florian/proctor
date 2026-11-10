@@ -17,10 +17,7 @@ export interface CallCount {
  * c.expect(toolUsed("no-web", { tool: /^Web/ }, { min: 0, max: 0 }))
  */
 export function toolUsed(id: string, match: ToolCallMatch, count: CallCount = {}): Grader {
-  const { min = 1, max = Number.POSITIVE_INFINITY } = count
-  if (!Number.isInteger(min) || min < 0 || max < min)
-    throw new Error(`toolUsed("${id}"): expected 0 <= min <= max, got min ${min}, max ${max}.`)
-  const range = describeRange(min, max)
+  const { min, max, range } = readCount(`toolUsed("${id}")`, count)
   return {
     id,
     grade: async ({ result }) => {
@@ -29,6 +26,19 @@ export function toolUsed(id: string, match: ToolCallMatch, count: CallCount = {}
       return { graderId: id, passed: met, criteria: [{ id, met, why: `${calls} ${describeMatch(match)} call(s), expected ${range}` }] }
     },
   }
+}
+
+/**
+ * The bounds of a {@link CallCount}, `min` 1 and `max` unbounded by default, and how a verdict states them; throws,
+ * naming `grader`, when they do not make sense.
+ *
+ * @example
+ * readCount('toolUsed("reads-rules")', { min: 0, max: 0 }) // { min: 0, max: 0, range: "exactly 0" }
+ */
+export function readCount(grader: string, count: CallCount): { min: number; max: number; range: string } {
+  const { min = 1, max = Number.POSITIVE_INFINITY } = count
+  if (!Number.isInteger(min) || min < 0 || max < min) throw new Error(`${grader}: expected 0 <= min <= max, got min ${min}, max ${max}.`)
+  return { min, max, range: describeRange(min, max) }
 }
 
 function describeRange(min: number, max: number): string {

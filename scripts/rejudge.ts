@@ -109,6 +109,8 @@ async function main(argv: string[]) {
       trial: Number(test.labels?.trial ?? 1),
       result,
       workspace,
+      // Only judge graders run here, and a judge never reads the MCP stubs of the trial.
+      mcpStubs: [],
       judge,
       signal: new AbortController().signal,
     }

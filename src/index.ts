@@ -22,6 +22,7 @@ export { readVerdict, verdictEquals, verdictIs, type Verdict, type VerdictOption
 export { answerShape, type AnswerContract } from "./graders/answer-shape.ts"
 export { MAX_REASON_LENGTH, yesNoContract, type YesNoAnswer, type YesNoContractOptions } from "./graders/yes-no-contract.ts"
 export { toolUsed, type CallCount } from "./graders/tool-used.ts"
+export { mcpCalled, type McpCallMatch } from "./graders/mcp-called.ts"
 export { jsonPath, type JsonExpectation, type JsonPathOptions } from "./graders/json-path.ts"
 export { fileChanged, fileUnchanged, type PathMatch } from "./graders/file-changed.ts"
 export {

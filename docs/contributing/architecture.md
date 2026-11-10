@@ -36,7 +36,8 @@ proctor/
 │   │   ├── mcp-stub/        # agent-neutral MCP stubs, shared by every agent adapter
 │   │   │   ├── stub-server.mjs  # stdio MCP server of tools, Node built-ins only, run by the agent in the sandbox
 │   │   │   ├── materialize.ts   # copies the program and writes the configs in the trial home, one entry per stub
-│   │   │   └── call-log.ts      # reads what each stub logged; checkStubsReady
+│   │   │   ├── call-log.ts      # reads what each stub logged; checkStubsReady; pairs calls with the log
+│   │   │   └── handshake.ts     # starts each stub through the sandbox, for the fake agent
 │   │   ├── agents/claude-code/
 │   │   │   ├── adapter.ts       # version, prepare, run: env, sandbox wrap, transcript
 │   │   │   ├── credentials.ts   # auth profiles, API domains per profile
@@ -56,12 +57,12 @@ proctor/
 │   │                        # tool-used, verdict-equals, answer-shape (+ yes-no-contract), limits, llm-judge (+ judge-protocol)
 │   ├── reporters/           # ctrf(-types), aggregates, markdown and html (CTRF sinks), console, files
 │   ├── loaders/             # registry, eval-ts, legacy-json, legacy-verdicts (oui/non → verdict, shape, judge on oui)
-│   ├── testing/             # FakeAgentAdapter, FakeSandbox (export "@fluce/proctor/testing")
+│   ├── testing/             # FakeAgentAdapter, FakeSandbox, answerStub (export "@fluce/proctor/testing")
 │   ├── shared/              # leaf utilities (fs, text, ids), importable by every layer
 │   └── cli/                 # main (commander), run, report, list, registry, host, interrupt (Ctrl-C)
 ├── eslint/import-boundaries.js
 ├── scripts/fingerprint-claude-home.ts, rejudge.ts
-├── examples/hello.eval.ts   # covered by test/cli.test.ts
+├── examples/hello.eval.ts, mcp-stub.eval.ts  # covered by test/cli.test.ts
 ├── suites/isolation-probe.eval.ts  # covered by test/isolation-probe.test.ts
 └── test/                    # behavior tests (*.test.ts); unit specs sit next to the sources (*.spec.ts)
     ├── support/             # imported through #test/*: setup.ts (no network, no credential), helpers, ctrf-schema, typecheck

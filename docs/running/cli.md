@@ -38,7 +38,7 @@ proctor report <ctrf.json> [--format html] [-o <file>] [--baseline <variant>]
 
 ## `proctor list <file>`
 
-Lists variants and cases without running anything.
+Lists variants and cases without running anything, and the MCP stubs of each variant, e.g. `with-pgsql  mcp stubs: pgsql (2 tools)`.
 
 ## Interruption
 

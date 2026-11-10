@@ -95,4 +95,8 @@ export interface CtrfTrialExtra {
   readonly judgeModel?: string
   /** Bytes the judge prompt left out of the diff and of the answer, to stay under its size limit. */
   readonly judgeTruncated?: { readonly diffBytes: number; readonly answerBytes: number }
+  /** Calls the MCP stubs answered; absent when they answered none. Neither inputs nor answers: a report holds no tool data. */
+  readonly mcpStubCalls?: number
+  /** Of those, the calls a fallback answered: what the case did not anticipate. */
+  readonly mcpStubFallbacks?: number
 }

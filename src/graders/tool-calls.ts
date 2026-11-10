@@ -1,5 +1,6 @@
 import type { ToolCall } from "../ports/agent.ts"
 import type { Grader } from "../ports/grader.ts"
+import { matchesInput } from "../ports/mcp-stub-rules.mjs"
 
 /** Which tool calls a grader looks at: a tool name, and a pattern over the JSON of the call input. */
 export interface ToolCallMatch {
@@ -22,8 +23,7 @@ export const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|
  * matchesCall({ name: "Read", input: { file_path: "/w/.claude/rules/x.md" } }, { tool: "Read", input: /rules/ }) // true
  */
 export const matchesCall = (call: ToolCall, match: ToolCallMatch): boolean =>
-  (typeof match.tool === "string" ? call.name === match.tool : call.name.search(match.tool) !== -1) &&
-  (match.input === undefined || JSON.stringify(call.input ?? null).search(match.input) !== -1)
+  (typeof match.tool === "string" ? call.name === match.tool : call.name.search(match.tool) !== -1) && matchesInput(match.input, call.input)
 
 /** @example describeMatch({ tool: "Bash", input: /env/ }) // "Bash /env/" */
 export const describeMatch = (match: ToolCallMatch): string => `${match.tool}${match.input ? ` ${match.input}` : ""}`

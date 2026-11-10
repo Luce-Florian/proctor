@@ -26,6 +26,8 @@ With a real sandbox, `--agent fake` runs one shell command through it, in the wo
 npx proctor run examples/hello.eval.ts --agent fake --sandbox srt
 ```
 
+With MCP stubs, it then starts each stub through the sandbox and has it list its tools: `node` must be readable, the log writable. A failure ends the trial `other` with `The MCP stub "pgsql" did not start in the sandbox`. The fake agent calls no tool: graders that expect stub calls fail in a dry run.
+
 When the check fails, the trial ends `other` with a message that starts with `The sandbox did not run a command in the workspace`, followed by the sandbox's own error. A suite with `judge()` also ends `other` under the fake judge, by design: a CI job tells the two apart by this message in the CTRF.
 
 ## The `srt` policy

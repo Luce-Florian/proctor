@@ -15,7 +15,8 @@ Every run writes one [CTRF](https://ctrf.io) document: `<out>/<suite>/<runId>.ct
     │   ├── status, duration, start, stop, message?, trace?, labels {case, variant, trial}
     │   └── extra     {criteria[], score, costUsd, model, pluginSha, tokens, turns,
     │                  agentDurationMs, transcript, judgeCalls, judgeCostUsd, judgeTokens,
-    │                  judgeModel, judgeTranscripts, judgeTruncated}
+    │                  judgeModel, judgeTranscripts, judgeTruncated,
+    │                  mcpStubCalls?, mcpStubFallbacks?}
     └── extra         {aggregates {baseline, groups[], judge}, ablation[], suiteErrors?}
 ```
 
@@ -32,6 +33,7 @@ Every run writes one [CTRF](https://ctrf.io) document: `<out>/<suite>/<runId>.ct
 | `results.extra.aggregates` | per case × variant: trials by status, criteria, decoys, principal, score, cost (mean ± standard deviation), duration, judge calls and cost; `judge`: run total | computed from the `tests` alone, so also on an archived CTRF |
 | `results.extra.ablation` | per case and variant ≠ `--baseline`: Δ criteria, Δ score, Δ cost, Δ pass rate | the delta vs baseline of `claude plugin eval` |
 | `tests[].extra.judge*` | `judgeCalls` (retries included), `judgeCostUsd`, `judgeTokens`, `judgeModel`, `judgeTranscripts`, `judgeTruncated` (`{diffBytes, answerBytes}` omitted from the prompt) | the judge's cost is never mixed with the agent's `costUsd` |
+| `tests[].extra.mcpStub*` | `mcpStubCalls` (calls the MCP stubs answered), `mcpStubFallbacks` (of those, answered by a fallback); absent when no stub answered a call | counts only: a report never holds a tool input or answer; the summary, the HTML report and the console note each trial with a fallback |
 | `environment.extra.judge` | `{ id, version, details, sandbox, model? }` | the report says who judged |
 | `results.extra.suiteErrors` | present only if `afterAll` failed | a suite error with no trial to carry it |
 | `results.environment` | `reportName`, `commit`, `branchName` (omitted on a detached HEAD), `osPlatform`, `osRelease`, `extra.{agent: {id, version, details}, sandbox, isolation}` | the schema forbids free fields outside `extra`; `details` carries the auth profile |

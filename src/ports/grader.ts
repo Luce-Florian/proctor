@@ -84,6 +84,8 @@ export interface GradeContext {
   readonly trial: number
   readonly result: AgentRunResult
   readonly workspace: Workspace
+  /** Names of the MCP stubs present in the trial: a grader about a stub the variant lacks is not applicable. */
+  readonly mcpStubs: readonly string[]
   /** The judge of the run, for graders that ask an agent for a verdict; absent when the run has none. */
   readonly judge?: JudgeRuntime
   /** Aborted when the run is interrupted: a grader that runs an agent passes it on. */
