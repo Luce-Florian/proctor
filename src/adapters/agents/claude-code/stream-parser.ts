@@ -1,4 +1,5 @@
 import type { AgentRunResult, TokenUsage, ToolCall } from "../../../ports/agent.ts"
+import { parseJsonOrUndefined } from "../../../shared/text.ts"
 
 /** The `system/init` event: what the session loaded (MCP servers, plugins, tools, model). */
 export interface InitEvent {
@@ -158,12 +159,8 @@ export class StreamCollector {
 function parseLine(line: string): StreamEvent | undefined {
   const trimmed = line.trim()
   if (!trimmed.startsWith("{")) return undefined
-  try {
-    const value: unknown = JSON.parse(trimmed)
-    return typeof value === "object" && value !== null && "type" in value ? (value as StreamEvent) : undefined
-  } catch {
-    return undefined
-  }
+  const value = parseJsonOrUndefined(trimmed)
+  return typeof value === "object" && value !== null && "type" in value ? (value as StreamEvent) : undefined
 }
 
 const isInit = (event: StreamEvent): event is InitEvent => event.type === "system" && event.subtype === "init"

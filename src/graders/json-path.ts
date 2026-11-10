@@ -1,9 +1,9 @@
 import { isDeepStrictEqual } from "node:util"
 import { asError } from "../core/errors.ts"
+import { readWorkspaceFile, workspaceEscape } from "../shared/fs.ts"
 import { clip } from "../shared/text.ts"
 import type { Grader } from "../ports/grader.ts"
 import { stripFences } from "./judge-protocol.ts"
-import { readWorkspaceFile, workspaceEscape } from "./workspace-files.ts"
 
 /** What the value at the path must be: equal to a value, match a pattern (strings), or satisfy a predicate. */
 export type JsonExpectation =

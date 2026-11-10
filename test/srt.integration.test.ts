@@ -6,13 +6,16 @@
 import { existsSync } from "node:fs"
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { platform } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { afterAll, describe, expect, it } from "vitest"
 import { NO_ACCESS, type Workspace } from "@fluce/proctor"
+import { materializeStubs } from "../src/adapters/mcp-stub/materialize.ts"
 import { runProcess, which } from "../src/adapters/process.ts"
 import { SrtSandbox } from "../src/adapters/sandboxes/srt/sandbox.ts"
 import { main } from "../src/cli/main.ts"
 import { gitIn, tempDir } from "#test/helpers.ts"
+import { McpClient } from "#test/mcp-client.ts"
+import { stub, stubTool } from "#test/mcp-stubs.ts"
 
 /** Why srt cannot run here, or undefined when it can. */
 function unavailable(): string | undefined {
@@ -102,6 +105,24 @@ describe.skipIf(reason !== undefined)("srt sandbox, real srt CLI", () => {
 
       const dotfile = await sh(ws, "echo '[alias]' > .gitconfig")
       expect(dotfile.code).not.toBe(0)
+    } finally {
+      await sandbox.destroy(ws)
+    }
+  }, 60_000)
+
+  it("serves an MCP stub to a client inside the sandbox, with node readable as the agent adapter declares it", async () => {
+    const sandbox = new SrtSandbox({ hostHome: fakeHome, tmpRoot: await tempDir() })
+    const ws = await sandbox.create({ label: "srt mcp", access: { ...NO_ACCESS, readablePaths: [dirname(process.execPath)] } })
+    try {
+      const [entry] = await materializeStubs([stub("pgsql", stubTool("list_instances"))], ws)
+      const command = entry && ws.wrap?.({ file: entry.command, args: entry.args })
+      if (!command) throw new Error("no stub entry, or an srt workspace without wrap")
+      const client = McpClient.spawn(command, { cwd: ws.cwd, env: ws.env })
+
+      await client.request("initialize")
+      const listed = await client.request("tools/list")
+
+      expect(listed.result).toEqual({ tools: [{ name: "list_instances", inputSchema: { type: "object" } }] })
     } finally {
       await sandbox.destroy(ws)
     }

@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdir, mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { onTestFinished } from "vitest"
-import type { AgentRunResult, Fixture, GradeContext, Grader } from "@fluce/proctor"
+import type { AgentRunResult, Fixture, GradeContext, Grader, Workspace } from "@fluce/proctor"
 
 /** Absolute path of a file under `test/fixtures/`, from a spec next to its source as from a behavior test. */
 export const fixturePath = (...segments: string[]): string => join(fileURLToPath(new URL("../fixtures/", import.meta.url)), ...segments)
@@ -14,6 +14,14 @@ export async function tempDir(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "proctor-test-"))
   onTestFinished(() => rm(dir, { recursive: true, force: true }))
   return dir
+}
+
+/** A workspace in a temp directory removed when the current test finishes: `work/` and `home/`, no sandbox. */
+export async function tempWorkspace(): Promise<Workspace> {
+  const root = await tempDir()
+  const workspace = { cwd: join(root, "work"), home: join(root, "home"), env: {} }
+  await Promise.all([mkdir(workspace.cwd), mkdir(workspace.home)])
+  return workspace
 }
 
 /** A grader that records "assert" and returns the given verdict. */

@@ -33,6 +33,10 @@ proctor/
 │   ├── adapters/
 │   │   ├── process.ts       # runs a command, explicit env, kills the group on abort and on exit
 │   │   ├── redact.ts        # masks the credential and any Anthropic key in the stream
+│   │   ├── mcp-stub/        # agent-neutral MCP stubs, shared by every agent adapter
+│   │   │   ├── stub-server.mjs  # stdio MCP server of tools, Node built-ins only, run by the agent in the sandbox
+│   │   │   ├── materialize.ts   # copies the program and writes the configs in the trial home, one entry per stub
+│   │   │   └── call-log.ts      # reads what each stub logged; checkStubsReady
 │   │   ├── agents/claude-code/
 │   │   │   ├── adapter.ts       # version, prepare, run: env, sandbox wrap, transcript
 │   │   │   ├── credentials.ts   # auth profiles, API domains per profile
@@ -70,7 +74,7 @@ The `local/import-boundaries` lint rule blocks:
 - any import of `adapters/`, `auth/`, `cli/`, `dsl/`, `fixtures/`, `graders/`, `loaders/`, `reporters/`, `testing/` or `src/index.ts` from `core/` or `ports/`, relative or by the package name (`proctor`, `@fluce/proctor/testing`);
 - any import of `core/` from `ports/`: the ports are the innermost layer.
 
-- `core/`, `ports/`, `shared/` and `test/` each list what they **may** import from `src/`: everything else, a folder added later included, is refused by default.
+- `core/`, `ports/`, `shared/`, `adapters/mcp-stub/` and `test/` each list what they **may** import from `src/`: everything else, a folder added later included, is refused by default.
 - `test/architecture.test.ts` relints the whole tree with `allowInlineConfig: false`: an `// eslint-disable` hides nothing in `npm test`.
 - A computed `import(path)` is refused everywhere except `loaders/eval-ts.ts`, which loads the user's `*.eval.ts`.
 

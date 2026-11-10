@@ -15,6 +15,18 @@ Add an agent, a sandbox, a grader or a reporter by **adding a file** that implem
 
 - A grader specific to one agent is allowed, named as such: `noToolNamed("…", "mcp__claude_ai_")`.
 - A new output fed by run events is a `Reporter` (`src/ports/reporter.ts`). A file derived from a CTRF is a `ReportFormat`: it also works on an archived run (`proctor report`).
-- The conformance test: adding OpenCode produces no diff in `src/core/` or `src/ports/`.
+- The conformance test: adding OpenCode produces no diff in `src/core/`, `src/ports/` or `src/adapters/mcp-stub/`.
+
+## MCP stubs in a new agent
+
+The stub program, its configuration, its call log and `checkStubsReady()` live in `src/adapters/mcp-stub/` and know no agent. An agent adapter that runs `AgentRunInput.mcpStubs` only fills this table.
+
+| Obligation | How |
+|---|---|
+| Declare each stub as a stdio MCP server | `materializeStubs(input.mcpStubs, workspace)` in `prepare`, then each entry `{ name, command, args }` in the agent's own MCP configuration |
+| Load only the declared servers | the agent's own switch |
+| Let every permission level call a stub without approval | the agent's own allow-list: a stub has no side effect |
+| Run the stub inside the trial sandbox | let the agent spawn it, and add `dirname(process.execPath)` to `sandboxAccess.readablePaths` |
+| Fail a trial whose stub did not serve | after the run, `checkStubsReady(input.mcpStubs, await readStubLogs(input.mcpStubs, workspace))` |
 
 See [Architecture](./architecture.md) for the layers and their import boundaries.

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { REGEX_KEY } from "../ports/mcp-stub-rules.mjs"
 import type { JsonPattern, McpAnswer, McpStubDefinition, McpStubRule, McpToolDefinition, McpToolRule } from "../ports/mcp-stub.ts"
 import { duplicates } from "../shared/arrays.ts"
 import type { CaseDefinition, McpCaseRule, McpCaseRules, VariantDefinition } from "./model.ts"
@@ -17,8 +18,6 @@ const NOT_A_PATTERN = "predicates cannot cross to the stub process; use an objec
 const NOT_JSON = "answers must be JSON (a string, number, boolean, null, array or plain object); read files and compute values before"
 const SCHEMA_NOT_JSON = "must be a JSON object, as the real server sends it in tools/list"
 
-/** The key a `RegExp` is written under to cross to the stub process: a stub definition cannot use it for its own data. */
-const REGEX_KEY = "$regex"
 const RESERVED_KEY = `the key "${REGEX_KEY}" is reserved for RegExp serialization; rename it`
 
 /** A value `JSON.stringify` writes and `JSON.parse` reads back unchanged: no function, class instance, `undefined` or `NaN`. */

@@ -15,6 +15,18 @@ Ajoutez un agent, une sandbox, un évaluateur ou un reporter en **ajoutant un fi
 
 - Un évaluateur propre à un agent est permis, nommé comme tel : `noToolNamed("…", "mcp__claude_ai_")`.
 - Une nouvelle sortie alimentée par les événements de l'exécution est un `Reporter` (`src/ports/reporter.ts`). Un fichier dérivé d'un CTRF est un `ReportFormat` : il fonctionne aussi sur une exécution archivée (`proctor report`).
-- Le test de conformité : ajouter OpenCode ne produit aucun diff dans `src/core/` ni dans `src/ports/`.
+- Le test de conformité : ajouter OpenCode ne produit aucun diff dans `src/core/`, `src/ports/` ni `src/adapters/mcp-stub/`.
+
+## Les stubs MCP dans un nouvel agent
+
+Le programme du stub, sa configuration, son journal d'appels et `checkStubsReady()` vivent dans `src/adapters/mcp-stub/` et ne connaissent aucun agent. Un adaptateur d'agent qui exécute `AgentRunInput.mcpStubs` ne fait que remplir ce tableau.
+
+| Obligation | Comment |
+|---|---|
+| Déclarer chaque stub comme un serveur MCP stdio | `materializeStubs(input.mcpStubs, workspace)` dans `prepare`, puis chaque entrée `{ name, command, args }` dans la configuration MCP propre à l'agent |
+| Ne charger que les serveurs déclarés | l'option propre à l'agent |
+| Laisser tout niveau de permission appeler un stub sans approbation | la liste d'autorisations propre à l'agent : un stub n'a aucun effet de bord |
+| Exécuter le stub dans la sandbox de l'essai | laisser l'agent le lancer, et ajouter `dirname(process.execPath)` à `sandboxAccess.readablePaths` |
+| Faire échouer un essai dont un stub n'a pas servi | après l'exécution, `checkStubsReady(input.mcpStubs, await readStubLogs(input.mcpStubs, workspace))` |
 
 Voir [Architecture](./architecture.md) pour les couches et leurs frontières d'import.
