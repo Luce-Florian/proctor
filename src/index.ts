@@ -2,6 +2,16 @@
 export { suite, SuiteBuilder } from "./dsl/suite.ts"
 export { VariantBuilder, type PromptState } from "./dsl/variant.ts"
 export { CaseBuilder, type ExpectationState } from "./dsl/case.ts"
+export {
+  mcpError,
+  mcpStub,
+  McpRuleAnswer,
+  McpStub,
+  McpStubError,
+  McpStubRules,
+  McpToolBuilder,
+  type McpStubResponse,
+} from "./dsl/mcp-stub.ts"
 export { directory } from "./fixtures/directory.ts"
 export { gitRepo, GitRepoFixture } from "./fixtures/git-repo.ts"
 export { regex } from "./graders/regex.ts"

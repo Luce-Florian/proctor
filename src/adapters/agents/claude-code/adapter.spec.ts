@@ -145,6 +145,15 @@ describe("ClaudeCodeAdapter", () => {
     expect(env.some((line) => line.startsWith("CLAUDE_CODE_OAUTH_TOKEN="))).toBe(false)
   })
 
+  it("refuses MCP stubs, which it does not run yet", async () => {
+    const ws = await fakeWorkspace("say-ok")
+    const pgsql = { server: "pgsql", tools: [] }
+
+    await expect(adapter().run(input({ mcpStubs: [pgsql] }), ws)).rejects.toThrow(
+      'claude-code does not run MCP stubs yet ("pgsql"): run the suite with --agent fake, or remove .mcpStub() from the variant.',
+    )
+  })
+
   it("says how to fix a missing binary", () => {
     expect(() => findExecutable("claude", "/nowhere")).toThrow('"claude" not found on PATH: install Claude Code')
   })

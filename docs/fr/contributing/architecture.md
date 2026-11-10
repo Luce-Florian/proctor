@@ -20,15 +20,16 @@ flowchart LR
 proctor/
 ├── bin/proctor.js        # enregistre tsx, puis lance src/cli/main.ts : pas de build
 ├── src/
-│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (résultats)
+│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (résultats), mcp-stub (données des stubs)
 │   ├── core/
 │   │   ├── model.ts         # définitions et schémas zod
+│   │   ├── mcp-stubs.ts     # contrôles des stubs MCP, règles du cas fusionnées dans les stubs de la variante (stubsFor)
 │   │   ├── trial-summary.ts # trialLabel, countByStatus
 │   │   ├── matrix.ts        # cas × variante × répétition, filtres
 │   │   ├── orchestrator.ts  # beforeAll/afterAll, -j (p-limit), reporters
 │   │   ├── lifecycle.ts     # un essai : hooks, try/finally, fixtures LIFO, statut
 │   │   ├── errors.ts · timeout.ts · duration.ts · exit-code.ts
-│   ├── dsl/                 # builders fluents : suite, variante, cas
+│   ├── dsl/                 # builders fluents : suite, variante, cas, mcpStub
 │   ├── adapters/
 │   │   ├── process.ts       # lance une commande, env explicite, tue le groupe à l'annulation et à la sortie
 │   │   ├── redact.ts        # masque l'identifiant et toute clé Anthropic dans le flux

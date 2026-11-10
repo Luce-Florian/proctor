@@ -2,9 +2,12 @@ import { z } from "zod"
 import { PERMISSIONS, type Permissions } from "../ports/agent.ts"
 import type { Fixture } from "../ports/fixture.ts"
 import type { Grader } from "../ports/grader.ts"
+import type { McpStubDefinition, McpStubRule } from "../ports/mcp-stub.ts"
 import type { SandboxAccess } from "../ports/sandbox.ts"
 import type { Workspace } from "../ports/workspace.ts"
+import { duplicates } from "../shared/arrays.ts"
 import { MAX_DURATION_MS } from "./duration.ts"
+import { mcpStubIssues } from "./mcp-stubs.ts"
 
 /** What a variant prompt can read from the case it runs. */
 export interface CaseContext {
@@ -31,11 +34,24 @@ export interface VariantDefinition {
   readonly prompt: (context: CaseContext) => string
   readonly plugins: readonly string[]
   readonly mcpServers: Readonly<Record<string, unknown>>
+  /** Fake MCP servers present in the trials of this variant; a case adds its answers with `c.mcpStub(...)`. */
+  readonly mcpStubs: readonly McpStubDefinition[]
   readonly model?: string
   readonly permissions: Permissions
   readonly settings: Readonly<Record<string, unknown>>
   readonly beforeEach: readonly TrialHook[]
   readonly afterEach: readonly TrialHook[]
+}
+
+/** A rule a case adds to one tool of a stub. */
+export interface McpCaseRule extends McpStubRule {
+  readonly tool: string
+}
+
+/** What a case answers for one stub, declared with `c.mcpStub(stub, s => ...)`; ignored by variants without that stub. */
+export interface McpCaseRules {
+  readonly server: string
+  readonly rules: readonly McpCaseRule[]
 }
 
 /** One scenario, run once per variant and per repetition. */
@@ -45,6 +61,7 @@ export interface CaseDefinition {
   readonly context: string
   readonly fixtures: readonly Fixture[]
   readonly graders: readonly Grader[]
+  readonly mcpStubRules: readonly McpCaseRules[]
   /** Maximum duration of the agent run, in milliseconds. */
   readonly timeoutMs: number
   /** When set, trials are reported `skipped` without running. */
@@ -67,6 +84,8 @@ const name = (what: string) =>
 
 const fn = <T>(message: string) => z.custom<T>((value) => typeof value === "function", message)
 
+const isObject = (value: unknown) => typeof value === "object" && value !== null
+
 const graderSchema = z.custom<Grader>(
   (value) => typeof (value as Grader | undefined)?.grade === "function" && typeof (value as Grader).id === "string",
   "expected a Grader (an object with an id and a grade() method)",
@@ -82,6 +101,7 @@ const variantSchema = z.object({
   prompt: fn<VariantDefinition["prompt"]>("Variant has no prompt: add .prompt(c => `...`)"),
   plugins: z.array(z.string().min(1)),
   mcpServers: z.record(z.string(), z.unknown()),
+  mcpStubs: z.array(z.custom<McpStubDefinition>(isObject, "expected an mcpStub() value")),
   model: z.string().min(1).optional(),
   permissions: z.enum(PERMISSIONS),
   settings: z.record(z.string(), z.unknown()),
@@ -96,6 +116,7 @@ const caseSchema = z
     context: z.string(),
     fixtures: z.array(fixtureSchema),
     graders: z.array(graderSchema),
+    mcpStubRules: z.array(z.custom<McpCaseRules>(isObject, "expected the rules of c.mcpStub(stub, s => ...)")),
     timeoutMs: z.number().int().positive().max(MAX_DURATION_MS),
     skipReason: z.string().optional(),
   })
@@ -103,8 +124,6 @@ const caseSchema = z
     message: 'Case has no expectation: add .expect(...), e.g. .expect(regex("says-hello", /hello/i))',
     path: ["graders"],
   })
-
-const duplicates = (values: readonly string[]) => [...new Set(values.filter((v, i) => values.indexOf(v) !== i))]
 
 /** Validates a suite built with the fluent API; see {@link parseSuiteDefinition}. */
 export const suiteSchema = z
@@ -121,6 +140,7 @@ export const suiteSchema = z
     }),
   })
   .superRefine((s, ctx) => {
+    for (const issue of mcpStubIssues(s)) ctx.addIssue({ code: "custom", ...issue })
     const named = [
       ["variants", "Variant names", s.variants.map((v) => v.name)],
       ["cases", "Case ids", s.cases.map((c) => c.id)],

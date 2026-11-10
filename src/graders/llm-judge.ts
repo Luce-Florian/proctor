@@ -230,6 +230,7 @@ export class Judge extends JudgeSettings<Judge> implements Grader {
         signal: AbortSignal.any([context.signal, AbortSignal.timeout(JUDGE_TIMEOUT_MS)]),
         plugins: [],
         mcpServers: {},
+        mcpStubs: [],
         permissions: "readonly",
         settings: {},
         ...(pinned !== undefined && { model: pinned }),

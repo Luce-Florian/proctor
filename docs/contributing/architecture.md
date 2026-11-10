@@ -20,15 +20,16 @@ flowchart LR
 proctor/
 ├── bin/proctor.js        # registers tsx, then runs src/cli/main.ts: no build
 ├── src/
-│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (results)
+│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (results), mcp-stub (stub data)
 │   ├── core/
 │   │   ├── model.ts         # definitions and zod schemas
+│   │   ├── mcp-stubs.ts     # MCP stub checks, case rules merged into the variant stubs (stubsFor)
 │   │   ├── trial-summary.ts # trialLabel, countByStatus
 │   │   ├── matrix.ts        # case × variant × repetition, filters
 │   │   ├── orchestrator.ts  # beforeAll/afterAll, -j (p-limit), reporters
 │   │   ├── lifecycle.ts     # one trial: hooks, try/finally, LIFO fixtures, status
 │   │   ├── errors.ts · timeout.ts · duration.ts · exit-code.ts
-│   ├── dsl/                 # fluent builders: suite, variant, case
+│   ├── dsl/                 # fluent builders: suite, variant, case, mcpStub
 │   ├── adapters/
 │   │   ├── process.ts       # runs a command, explicit env, kills the group on abort and on exit
 │   │   ├── redact.ts        # masks the credential and any Anthropic key in the stream

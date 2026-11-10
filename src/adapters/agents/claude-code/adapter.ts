@@ -94,6 +94,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   }
 
   async #prepare(input: AgentPrepareInput, workspace: Workspace): Promise<Prepared> {
+    if (input.mcpStubs.length > 0) {
+      const servers = input.mcpStubs.map((stub) => `"${stub.server}"`).join(", ")
+      throw new Error(
+        `claude-code does not run MCP stubs yet (${servers}): run the suite with --agent fake, or remove .mcpStub() from the variant.`,
+      )
+    }
     const refs = input.plugins.map((ref) => parsePluginRef(ref, this.#options.pluginRoots))
     const pluginDirs: string[] = []
     const sources: string[] = []

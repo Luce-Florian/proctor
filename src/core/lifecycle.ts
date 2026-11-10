@@ -3,6 +3,7 @@ import type { GradeContext, GradeResult, JudgeRuntime } from "../ports/grader.ts
 import type { TrialResult, TrialStatus } from "../ports/run.ts"
 import { mergeAccess, type Sandbox, type SandboxAccess } from "../ports/sandbox.ts"
 import { asError, judgeUsageOf, step, traceOf, transcriptPathOf } from "./errors.ts"
+import { stubsFor } from "./mcp-stubs.ts"
 import type { CaseDefinition, TrialContext, VariantDefinition } from "./model.ts"
 import { withTimeout } from "./timeout.ts"
 import { trialLabel } from "./trial-summary.ts"
@@ -69,7 +70,7 @@ export async function runTrial(plan: TrialPlan, runtime: TrialRuntime): Promise<
       const teardown = await step(`fixture ${fixture.description} setup`, () => fixture.setup(workspace))
       if (teardown) cleanups.push([`fixture ${fixture.description} teardown`, teardown])
     }
-    const undo = await step("agent prepare", () => runtime.agent.prepare?.(agentSetup(variant, signal), workspace))
+    const undo = await step("agent prepare", () => runtime.agent.prepare?.(agentSetup(variant, testCase, signal), workspace))
     if (undo) cleanups.push(["agent prepare undo", undo])
     const context: TrialContext = { ...ids, workspace }
     // Pushed in reverse so that, once the stack unwinds, afterEach hooks run in declaration order.
@@ -127,11 +128,12 @@ export function abortedTrial(plan: TrialPlan, error: Error, at: number): TrialRe
   return result(plan, { ...outcome, start: at, stop: at, grades: [] })
 }
 
-function agentSetup(variant: VariantDefinition, signal: AbortSignal): AgentPrepareInput {
+function agentSetup(variant: VariantDefinition, testCase: CaseDefinition, signal: AbortSignal): AgentPrepareInput {
   return {
     signal,
     plugins: variant.plugins,
     mcpServers: variant.mcpServers,
+    mcpStubs: stubsFor(variant, testCase),
     ...(variant.model !== undefined && { model: variant.model }),
     permissions: variant.permissions,
     settings: variant.settings,
@@ -140,7 +142,7 @@ function agentSetup(variant: VariantDefinition, signal: AbortSignal): AgentPrepa
 
 function agentInput(plan: TrialPlan, signal: AbortSignal): AgentRunInput {
   const { variant, testCase } = plan
-  return { ...agentSetup(variant, signal), prompt: variant.prompt({ id: testCase.id, context: testCase.context }) }
+  return { ...agentSetup(variant, testCase, signal), prompt: variant.prompt({ id: testCase.id, context: testCase.context }) }
 }
 
 /** Graders already saw `raw`; trials are kept until the run ends, so the adapter payload is dropped. */

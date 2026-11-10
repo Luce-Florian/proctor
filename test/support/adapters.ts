@@ -23,6 +23,7 @@ export const input = (patch: Partial<AgentRunInput> = {}): AgentRunInput => ({
   prompt: "say ok",
   plugins: [],
   mcpServers: {},
+  mcpStubs: [],
   permissions: "readonly",
   settings: {},
   signal: new AbortController().signal,

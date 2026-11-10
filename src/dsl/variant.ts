@@ -1,5 +1,6 @@
 import type { Permissions } from "../ports/agent.ts"
 import type { CaseContext, TrialHook, VariantDefinition } from "../core/model.ts"
+import type { McpStub } from "./mcp-stub.ts"
 
 type VariantState = Omit<VariantDefinition, "prompt"> & { readonly prompt?: VariantDefinition["prompt"] }
 
@@ -51,6 +52,17 @@ export class VariantBuilder<State extends PromptState = PromptState> {
    */
   mcpServers(servers: Record<string, unknown>): VariantBuilder<State> {
     return this.#with({ mcpServers: { ...this.#state.mcpServers, ...servers } })
+  }
+
+  /**
+   * Runs a fake MCP server in every trial of the variant; repeatable. A variant without it runs without the server,
+   * so two variants measure the skill with and without it. Cases add their answers with `c.mcpStub(stub, s => ...)`.
+   *
+   * @example
+   * v.mcpStub(pgsql)
+   */
+  mcpStub(stub: McpStub): VariantBuilder<State> {
+    return this.#with({ mcpStubs: [...this.#state.mcpStubs, stub.toDefinition()] })
   }
 
   /**
@@ -119,6 +131,7 @@ export const emptyVariant = (name: string): VariantBuilder<"without-prompt"> =>
     name,
     plugins: [],
     mcpServers: {},
+    mcpStubs: [],
     permissions: "readonly",
     settings: {},
     beforeEach: [],

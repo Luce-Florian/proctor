@@ -1,4 +1,5 @@
 import type { Teardown } from "./fixture.ts"
+import type { McpStubDefinition } from "./mcp-stub.ts"
 import type { SandboxAccess } from "./sandbox.ts"
 import type { Workspace } from "./workspace.ts"
 
@@ -16,6 +17,8 @@ export interface AgentRunInput {
   readonly plugins: readonly string[]
   /** MCP server definitions, keyed by server name. Opaque to the core. */
   readonly mcpServers: Readonly<Record<string, unknown>>
+  /** Fake MCP servers the agent must run, with the case's rules merged in: agent-neutral data, see `mcp-stub.ts`. */
+  readonly mcpStubs: readonly McpStubDefinition[]
   /** Exact model identifier; `undefined` lets the adapter pick its default. */
   readonly model?: string
   readonly permissions: Permissions
