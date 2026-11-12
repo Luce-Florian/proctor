@@ -82,6 +82,7 @@ const sections: readonly Section[] = [
       },
       { path: "campaigns/2026-09-30-judge", title: { en: "2026-09-30: judge", fr: "2026-09-30 : juge" } },
       { path: "campaigns/2026-10-02-ported-theme", title: { en: "2026-10-02: ported theme", fr: "2026-10-02 : thème porté" } },
+      { path: "campaigns/2026-11-12-mcp-stub", title: { en: "2026-11-12: MCP stubs", fr: "2026-11-12 : stubs MCP" } },
     ],
   },
   {

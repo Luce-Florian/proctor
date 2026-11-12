@@ -1,0 +1,5 @@
+{
+  "name": "dbtools",
+  "description": "Answers questions about a PostgreSQL schema from the pgsql MCP server.",
+  "version": "0.0.0"
+}

@@ -7,6 +7,7 @@ Real runs that validate the harness against a real agent: isolation, parity with
 | [2026-09-30: isolation and parity](./2026-09-30-isolation-parity.md) | the isolation probe under `srt` and `local-temp`; parity with the bash bench on a code-review theme and legacy themes |
 | [2026-09-30: judge](./2026-09-30-judge.md) | stability of `judge()` over 3 rejudges, yes/no themes without a judge, the HTML report |
 | [2026-10-02: ported theme](./2026-10-02-ported-theme.md) | a theme ported to `*.eval.ts` against the legacy loader |
+| [2026-11-12: MCP stubs](./2026-11-12-mcp-stub.md) | MCP stubs under `srt` with a real agent: answers grounded in the stub, a plugin's server replaced under its own name |
 
 ## Running a campaign
 
