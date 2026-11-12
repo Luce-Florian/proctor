@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/Luce-Florian/proctor/compare/v0.2.1...v0.3.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* `AgentRunInput.mcpStubs` and `GradeContext.mcpStubs` are required; code that builds one by hand passes `mcpStubs: []`.
+
+### Features
+
+* MCP stubs in evals ([#27](https://github.com/Luce-Florian/proctor/issues/27)) ([9d3ca1f](https://github.com/Luce-Florian/proctor/commit/9d3ca1fc4ff515c78267409b2c66ca638d3c6732))
+
 ## [0.2.1](https://github.com/Luce-Florian/proctor/compare/v0.2.0...v0.2.1) (2026-11-04)
 
 
