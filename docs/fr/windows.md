@@ -38,7 +38,7 @@ Ouvrez le terminal Ubuntu. Lancez toutes les commandes suivantes dedans.
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y bubblewrap socat ripgrep git curl
+sudo apt-get install -y bubblewrap socat ripgrep git curl gh
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 curl -fsSL https://claude.ai/install.sh | bash
@@ -61,10 +61,13 @@ Posez le token dans le shell WSL. Une variable posée dans PowerShell n'est pas 
 
 ```sh
 cd ~
+gh auth login
 git clone https://github.com/<org>/<repo>.git
 cd <repo>
 npm i -D @fluce/proctor
 ```
+
+`gh auth login` permet à git de cloner les dépôts privés : répondez oui à « Authenticate Git with your GitHub credentials ».
 
 Gardez vos dépôts sous `~`, pas sous `/mnt/c` : le disque Windows est lent depuis WSL ([Microsoft](https://learn.microsoft.com/fr-fr/windows/wsl/filesystems)). Depuis Windows, ouvrez-les sous `\\wsl$\Ubuntu-24.04\home\<vous>`.
 

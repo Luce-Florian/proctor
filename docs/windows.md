@@ -38,7 +38,7 @@ Open the Ubuntu terminal. Run every following command there.
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y bubblewrap socat ripgrep git curl
+sudo apt-get install -y bubblewrap socat ripgrep git curl gh
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 curl -fsSL https://claude.ai/install.sh | bash
@@ -61,10 +61,13 @@ Set the token in the WSL shell. A variable set in PowerShell is not visible in W
 
 ```sh
 cd ~
+gh auth login
 git clone https://github.com/<org>/<repo>.git
 cd <repo>
 npm i -D @fluce/proctor
 ```
+
+`gh auth login` lets git clone private repos: answer yes to "Authenticate Git with your GitHub credentials".
 
 Keep your repos under `~`, not under `/mnt/c`: the Windows drive is slow from WSL ([Microsoft](https://learn.microsoft.com/en-us/windows/wsl/filesystems)). From Windows, open them under `\\wsl$\Ubuntu-24.04\home\<you>`.
 
