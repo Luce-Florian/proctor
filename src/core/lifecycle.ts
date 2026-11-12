@@ -1,8 +1,9 @@
-import type { AgentAdapter, AgentPrepareInput, AgentRunInput, AgentRunResult } from "../ports/agent.ts"
+import { agentSandboxAccess, type AgentAdapter, type AgentPrepareInput, type AgentRunInput, type AgentRunResult } from "../ports/agent.ts"
 import type { GradeContext, GradeResult, JudgeRuntime } from "../ports/grader.ts"
 import type { TrialResult, TrialStatus } from "../ports/run.ts"
 import { mergeAccess, type Sandbox, type SandboxAccess } from "../ports/sandbox.ts"
 import { asError, judgeUsageOf, step, traceOf, transcriptPathOf } from "./errors.ts"
+import { stubsFor } from "./mcp-stubs.ts"
 import type { CaseDefinition, TrialContext, VariantDefinition } from "./model.ts"
 import { withTimeout } from "./timeout.ts"
 import { trialLabel } from "./trial-summary.ts"
@@ -62,14 +63,15 @@ export async function runTrial(plan: TrialPlan, runtime: TrialRuntime): Promise<
   const { signal } = runtime
 
   try {
-    const access = mergeAccess(runtime.agent.sandboxAccess, plan.sandboxAccess)
+    const setup = agentSetup(variant, testCase, signal)
+    const access = mergeAccess(agentSandboxAccess(runtime.agent, setup), plan.sandboxAccess)
     const workspace = await step("sandbox create", () => runtime.sandbox.create({ label: trialLabel(ids), access }))
     cleanups.push(["sandbox destroy", () => runtime.sandbox.destroy(workspace)])
     for (const fixture of testCase.fixtures) {
       const teardown = await step(`fixture ${fixture.description} setup`, () => fixture.setup(workspace))
       if (teardown) cleanups.push([`fixture ${fixture.description} teardown`, teardown])
     }
-    const undo = await step("agent prepare", () => runtime.agent.prepare?.(agentSetup(variant, signal), workspace))
+    const undo = await step("agent prepare", () => runtime.agent.prepare?.(setup, workspace))
     if (undo) cleanups.push(["agent prepare undo", undo])
     const context: TrialContext = { ...ids, workspace }
     // Pushed in reverse so that, once the stack unwinds, afterEach hooks run in declaration order.
@@ -85,7 +87,8 @@ export async function runTrial(plan: TrialPlan, runtime: TrialRuntime): Promise<
       })
     const run = await step("agent run", () => withTimeout(act, testCase.timeoutMs, { signal }))
     agentResult = withoutRaw(run)
-    const gradeContext: GradeContext = { ...ids, result: run, workspace, signal, ...(runtime.judge && { judge: runtime.judge }) }
+    const mcpStubs = variant.mcpStubs.map((stub) => stub.server)
+    const gradeContext: GradeContext = { ...ids, result: run, workspace, mcpStubs, signal, ...(runtime.judge && { judge: runtime.judge }) }
     for (const grader of testCase.graders) {
       const grade = await step(`grader ${grader.id}`, () => grader.grade(gradeContext)).catch((error: unknown) => {
         // No verdict, but the judge calls made before the failure were paid for: the report counts them.
@@ -127,11 +130,12 @@ export function abortedTrial(plan: TrialPlan, error: Error, at: number): TrialRe
   return result(plan, { ...outcome, start: at, stop: at, grades: [] })
 }
 
-function agentSetup(variant: VariantDefinition, signal: AbortSignal): AgentPrepareInput {
+function agentSetup(variant: VariantDefinition, testCase: CaseDefinition, signal: AbortSignal): AgentPrepareInput {
   return {
     signal,
     plugins: variant.plugins,
     mcpServers: variant.mcpServers,
+    mcpStubs: stubsFor(variant, testCase),
     ...(variant.model !== undefined && { model: variant.model }),
     permissions: variant.permissions,
     settings: variant.settings,
@@ -140,7 +144,7 @@ function agentSetup(variant: VariantDefinition, signal: AbortSignal): AgentPrepa
 
 function agentInput(plan: TrialPlan, signal: AbortSignal): AgentRunInput {
   const { variant, testCase } = plan
-  return { ...agentSetup(variant, signal), prompt: variant.prompt({ id: testCase.id, context: testCase.context }) }
+  return { ...agentSetup(variant, testCase, signal), prompt: variant.prompt({ id: testCase.id, context: testCase.context }) }
 }
 
 /** Graders already saw `raw`; trials are kept until the run ends, so the adapter payload is dropped. */

@@ -23,12 +23,25 @@ const codeBlocks = (markdown: string) =>
 /** Blocks a reader copies and runs: identical in every locale. Prose diagrams (mermaid, text) may be translated. */
 const RUNNABLE = new Set(["ts", "sh", "console", "json"])
 
+/** The `ts` block of a page that opens with `// <example path>`, without that line. */
+function exampleBlock(markdown: string, example: string): string | undefined {
+  const header = `// ${example}\n`
+  return codeBlocks(markdown)
+    .find((block) => block.lang === "ts" && block.code.startsWith(header))
+    ?.code.slice(header.length)
+}
+
 describe("README", () => {
   it("opens with the exact content of examples/hello.eval.ts, which the CLI tests run", async () => {
-    const readme = await read("README.md")
-    const firstTsBlock = /```ts\n\/\/ examples\/hello\.eval\.ts\n([\s\S]*?)```/.exec(readme)?.[1]
+    expect(exampleBlock(await read("README.md"), "examples/hello.eval.ts")).toBe(await read("examples/hello.eval.ts"))
+  })
+})
 
-    expect(firstTsBlock).toBe(await read("examples/hello.eval.ts"))
+describe("MCP stubs page", () => {
+  it("opens with the exact content of examples/mcp-stub.eval.ts, which the CLI tests run", async () => {
+    const page = await read("docs/writing-evals/mcp-stubs.md")
+
+    expect(exampleBlock(page, "examples/mcp-stub.eval.ts")).toBe(await read("examples/mcp-stub.eval.ts"))
   })
 })
 

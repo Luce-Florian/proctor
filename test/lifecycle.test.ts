@@ -1,6 +1,19 @@
 import { setTimeout as sleep } from "node:timers/promises"
 import { describe, expect, it } from "vitest"
-import { judge, regex, runSuite, suite, verdictEquals, verdictIs, type AgentAdapter, type GradeContext, type Grader } from "@fluce/proctor"
+import {
+  judge,
+  mcpStub,
+  regex,
+  runSuite,
+  suite,
+  verdictEquals,
+  verdictIs,
+  type AgentAdapter,
+  type AgentPrepareInput,
+  type GradeContext,
+  type Grader,
+  type SandboxAccess,
+} from "@fluce/proctor"
 import { FakeAgentAdapter, FakeSandbox } from "@fluce/proctor/testing"
 import { recordingFixture, recordingGrader } from "#test/helpers.ts"
 
@@ -289,9 +302,11 @@ describe("trial lifecycle", () => {
 describe("agent preparation and sandbox access", () => {
   /** A fake agent that records prepare() and its undo, with sandbox needs of its own. */
   class PreparingAgent extends FakeAgentAdapter {
-    readonly sandboxAccess = { allowedDomains: ["api.example.com"], readablePaths: ["/opt/agent"] }
     constructor(readonly events: string[]) {
-      super({ reply: () => (events.push("act"), "hello") })
+      super({
+        reply: () => (events.push("act"), "hello"),
+        sandboxAccess: { allowedDomains: ["api.example.com"], readablePaths: ["/opt/agent"] },
+      })
     }
     async prepare(input: { plugins: readonly string[] }) {
       this.events.push(`prepare ${input.plugins.join(",")}`)
@@ -316,6 +331,27 @@ describe("agent preparation and sandbox access", () => {
       "teardown",
       "afterAll",
     ])
+  })
+
+  it("asks an agent whose sandbox needs depend on the trial for those of each trial", async () => {
+    /** Needs one readable directory per MCP stub of the trial. */
+    const stubAware = new FakeAgentAdapter({
+      sandboxAccess: (input: AgentPrepareInput): SandboxAccess => ({
+        allowedDomains: [],
+        readablePaths: input.mcpStubs.map((stub) => `/opt/${stub.server}`),
+      }),
+    })
+    const pgsql = mcpStub("pgsql").tool("list_instances", (t) => t.returns(["prod"]))
+    const sandbox = new FakeSandbox()
+    const definition = suite("access")
+      .variant("with-pgsql", (v) => v.mcpStub(pgsql).prompt("hi"))
+      .variant("without-server", (v) => v.prompt("hi"))
+      .case("c", (c) => c.expect(regex("any-answer", /./)))
+      .toDefinition()
+
+    await runSuite(definition, { agent: stubAware, sandbox })
+
+    expect(sandbox.specs.map((spec) => spec.access.readablePaths)).toEqual([["/opt/pgsql"], []])
   })
 
   it("hands the sandbox what the agent and the suite need, and graders the run's judge, never the agent under test", async () => {

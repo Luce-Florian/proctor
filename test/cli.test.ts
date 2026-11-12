@@ -10,6 +10,7 @@ import { fixturePath, tempDir } from "#test/helpers.ts"
 
 const root = new URL("..", import.meta.url).pathname
 const hello = join(root, "examples/hello.eval.ts")
+const mcpStubExample = join(root, "examples/mcp-stub.eval.ts")
 const fixture = (name: string) => fixturePath("suites", name)
 
 let out: string
@@ -57,6 +58,18 @@ describe("proctor run", () => {
     expect(summary).toContain("| greets-world | polite | 1 | passed | 2/2 |")
     expect(summary).toContain("(isolation `none`)")
     expect(stdout).toContain(`Wrote ${ctrf}\nWrote ${summaryFile}\n`)
+  })
+
+  it("dry runs examples/mcp-stub.eval.ts: the fake agent calls no tool, so only the variant without the server passes", async () => {
+    const { code } = await cli("run", mcpStubExample, "--agent", "fake", "--out", out)
+
+    const report = await readCtrf("mcp-stub")
+    expect(ctrfErrors(report)).toEqual([])
+    expect(report.results.tests.map((t: { name: string; status: string; message?: string }) => [t.name, t.status, t.message])).toEqual([
+      ["index-exists [with-pgsql] #1", "failed", "Unmet criteria: reads-orders"],
+      ["index-exists [without-server] #1", "passed", undefined],
+    ])
+    expect(code).toBe(1)
   })
 
   it("judges with a fake when the agent is fake, and warns about a judge that pins no model", async () => {
@@ -273,6 +286,12 @@ describe("proctor list", () => {
     expect(stdout).toContain("hello")
     expect(stdout).toContain("variants: baseline, polite")
     expect(stdout).toContain("greets-world — The agent greets the world")
+  })
+
+  it("lists the MCP stubs of each variant", async () => {
+    const { stdout } = await cli("list", mcpStubExample)
+
+    expect(stdout).toContain("variants: with-pgsql, without-server\n  with-pgsql  mcp stubs: pgsql (1 tool)\n")
   })
 })
 

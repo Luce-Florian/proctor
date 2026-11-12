@@ -1,4 +1,6 @@
+import type { ClaudeStub } from "./mcp-stubs.ts"
 import type { HookEvent, InitEvent } from "./stream-parser.ts"
+import { mcpToolPrefix } from "./tool-names.ts"
 
 /** What the variant declared, hence what the session may load. */
 export interface DeclaredComponents {
@@ -6,7 +8,7 @@ export interface DeclaredComponents {
   readonly pluginDirs: readonly string[]
   /** Installed plugin ids, `plugin@marketplace`. */
   readonly pluginIds: readonly string[]
-  /** MCP server names passed with `--mcp-config`. */
+  /** MCP server names passed with `--mcp-config`, stubs included. */
   readonly mcpServers: readonly string[]
   /** Hook events of the variant settings, e.g. `SessionStart`. */
   readonly hookEvents: readonly string[]
@@ -19,9 +21,6 @@ export class IsolationError extends Error {
 
 /** Plugins Claude Code ships with, always reported by `system/init`. */
 const isBuiltin = (plugin: { path?: string; source?: string }) => plugin.path === "builtin" || plugin.source?.endsWith("@builtin")
-
-/** MCP tools are named `mcp__<server>__<tool>`, the server name normalized to `[A-Za-z0-9_-]`. */
-const toolPrefix = (server: string) => `mcp__${server.replace(/[^A-Za-z0-9_-]/g, "_")}__`
 
 /**
  * Compares what `system/init` reports with what the variant declared. Returns one line per problem:
@@ -38,7 +37,7 @@ export function probeInit(init: InitEvent, declared: DeclaredComponents): string
   for (const server of init.mcp_servers ?? []) {
     if (!servers.has(server.name)) problems.push(`undeclared MCP server "${server.name}"`)
   }
-  const prefixes = declared.mcpServers.map(toolPrefix)
+  const prefixes = declared.mcpServers.map(mcpToolPrefix)
   for (const tool of init.tools ?? []) {
     if (tool.startsWith("mcp__") && !prefixes.some((p) => tool.startsWith(p))) problems.push(`undeclared MCP tool ${tool}`)
   }
@@ -77,4 +76,30 @@ export function probeHooks(hooks: readonly HookEvent[], declared: DeclaredCompon
       (hook) =>
         `undeclared hook "${hook.hook_name ?? hook.hook_event}": neither in the variant settings nor from a plugin (host managed settings?)`,
     )
+}
+
+/**
+ * The `system/init` status of an MCP server still connecting: the probe cannot tell yet whether a stub in that state
+ * will serve, and the stub's own log decides after the run.
+ */
+const PENDING = "pending"
+
+/**
+ * Checks that `system/init` shows every MCP stub connected with all its tools: a stub that failed to start would let the
+ * run measure the skill without its server. Stopping here saves the run's tokens; the stub's own log decides after the
+ * run anyway, so a stub still connecting is not stopped. Returns one line per problem.
+ *
+ * @example
+ * probeStubs(init, [{ name: "pgsql", entry: { name: "pgsql", command: "node", args: [], tools: ["get_object_details"] } }])
+ * // ['MCP stub "pgsql" is failed, not connected']
+ */
+export function probeStubs(init: InitEvent, stubs: readonly ClaudeStub[]): string[] {
+  const listed = new Set(init.tools ?? [])
+  return stubs.flatMap(({ name, entry }) => {
+    const status = init.mcp_servers?.find((server) => server.name === name)?.status ?? "absent"
+    if (status === PENDING) return []
+    if (status !== "connected") return [`MCP stub "${entry.name}" is ${status}, not connected`]
+    const missing = entry.tools.map((tool) => `${mcpToolPrefix(name)}${tool}`).filter((tool) => !listed.has(tool))
+    return missing.length > 0 ? [`MCP stub "${entry.name}" lacks ${missing.join(", ")}`] : []
+  })
 }

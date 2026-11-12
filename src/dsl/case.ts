@@ -2,6 +2,7 @@ import { parseDuration, type Duration } from "../core/duration.ts"
 import type { CaseDefinition } from "../core/model.ts"
 import type { Fixture } from "../ports/fixture.ts"
 import type { Grader } from "../ports/grader.ts"
+import { emptyRules, type McpStub, type McpStubRules } from "./mcp-stub.ts"
 
 /** Default maximum duration of an agent run. */
 export const DEFAULT_TIMEOUT: Duration = "10m"
@@ -67,6 +68,18 @@ export class CaseBuilder<State extends ExpectationState = ExpectationState> {
   }
 
   /**
+   * Answers calls to the tools of `stub` in this case, before the stub's own answers; repeatable. Applies only in the
+   * variants that declare the stub, and is ignored in the others.
+   *
+   * @example
+   * c.mcpStub(pgsql, (s) => s.on("get_object_details", { object_name: "orders" }).returns({ table: "public.orders" }))
+   */
+  mcpStub<Tools extends string>(stub: McpStub<Tools>, configure: (rules: McpStubRules<Tools>) => McpStubRules<Tools>): CaseBuilder<State> {
+    const rules = configure(emptyRules<Tools>()).toDefinition(stub.toDefinition().server)
+    return this.#with({ mcpStubRules: [...this.#state.mcpStubRules, rules] })
+  }
+
+  /**
    * Maximum duration of the agent run (default `"10m"`). Past it, the trial is `other`.
    *
    * @example
@@ -98,4 +111,11 @@ export class CaseBuilder<State extends ExpectationState = ExpectationState> {
 
 /** @internal */
 export const emptyCase = (id: string): CaseBuilder<"without-expectation"> =>
-  new CaseBuilder<"without-expectation">({ id, context: "", fixtures: [], graders: [], timeoutMs: parseDuration(DEFAULT_TIMEOUT) })
+  new CaseBuilder<"without-expectation">({
+    id,
+    context: "",
+    fixtures: [],
+    graders: [],
+    mcpStubRules: [],
+    timeoutMs: parseDuration(DEFAULT_TIMEOUT),
+  })

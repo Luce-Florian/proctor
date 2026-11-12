@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "pgsql": { "command": "false" }
+  }
+}

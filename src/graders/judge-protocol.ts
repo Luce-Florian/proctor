@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { z } from "zod"
+import { duplicates } from "../shared/arrays.ts"
 
 /** A criterion as the judge reads it. */
 export interface JudgeCriterion {
@@ -193,7 +194,7 @@ export function parseAnswer(text: string, ids: readonly string[]): ParsedAnswer 
   const quoted = (list: readonly string[]) => list.map((id) => `"${id}"`).join(", ")
   const missing = ids.filter((id) => !given.includes(id))
   const unknown = given.filter((id) => !ids.includes(id))
-  const repeated = given.filter((id, i) => given.indexOf(id) !== i)
+  const repeated = duplicates(given)
   const problems = [
     missing.length > 0 && `missing criterion ids: ${quoted(missing)}`,
     unknown.length > 0 && `unknown criterion ids: ${quoted(unknown)}`,

@@ -26,6 +26,8 @@ With a real sandbox, `--agent fake` runs one shell command through it, in the wo
 npx proctor run examples/hello.eval.ts --agent fake --sandbox srt
 ```
 
+With MCP stubs, it then starts each stub through the sandbox and has it list its tools: `node` must be readable, the log writable. A failure ends the trial `other` with `The MCP stub "pgsql" did not start in the sandbox`. The fake agent calls no tool: graders that expect stub calls fail in a dry run.
+
 When the check fails, the trial ends `other` with a message that starts with `The sandbox did not run a command in the workspace`, followed by the sandbox's own error. A suite with `judge()` also ends `other` under the fake judge, by design: a CI job tells the two apart by this message in the CTRF.
 
 ## The `srt` policy
@@ -40,10 +42,11 @@ host disk                                  what a trial sees under srt
 │   ├── ae-review-basel-a1b2c3/            this trial's root, not re-allowed itself
 │   │   ├── srt-settings.json              hidden: the policy, read by srt outside the sandbox
 │   │   ├── work/                          writable: cwd, the workspace
-│   │   ├── home/                          writable: HOME, XDG_*, .claude/, .proctor/plugins/
+│   │   ├── home/                          writable: HOME, XDG_*, .claude/, .proctor/plugins/, .proctor/mcp/
 │   │   └── tmp/                           writable: TMPDIR, CLAUDE_CODE_TMPDIR
 │   └── ae-review-with--d4e5f6/            hidden: another trial (-j 2)
 ├── directory of the claude binary         readable (sandboxAccess)
+├── directory of node                      readable (sandboxAccess) in a trial with MCP stubs: it runs them
 ├── .allowRead() / .allowWrite() paths     readable / writable
 └── /usr, /opt, /etc…                      readable: binaries, libraries, certificates
 ```
@@ -55,7 +58,7 @@ host disk                                  what a trial sees under srt
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (those that exist) | `/tmp/claude-<uid>` holds the outputs of the host's Claude sessions; mounted disks |
 | `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | never the root itself: on Linux, srt binds a re-allowed directory back read-only after the writable binds, which would make the workspace read-only and stop bubblewrap at startup |
 | `allowRead` | the `@anthropic-ai/sandbox-runtime` package | on Linux srt runs its seccomp filter from `vendor/seccomp`, inside the sandbox, and `node_modules` often sits under the hidden home |
-| `allowRead` | directory of the agent binary, `.allowRead()`, `.allowWrite()` | what the agent and the suite declare |
+| `allowRead` | directory of the agent binary, directory of `node` (trials with MCP stubs only), `.allowRead()`, `.allowWrite()` | what the agent and the suite declare; `node` installed by nvm, fnm or volta sits under the hidden home |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | nothing else; srt adds stdio and `/tmp/claude`, unreadable here |
 | `allowedDomains` | the model API for the profile, `.allowDomains()` | everything else is blocked by the srt proxy |
 | env | `CLAUDE_CODE_TMPDIR=<root>/tmp` | srt gives the command `TMPDIR=$CLAUDE_CODE_TMPDIR`, otherwise `/tmp/claude`, shared and hidden |

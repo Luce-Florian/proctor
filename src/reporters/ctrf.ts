@@ -9,6 +9,7 @@ import { mergeJudgeUsage } from "../ports/grader.ts"
 import { aggregate } from "./aggregates.ts"
 import type { CtrfReport, CtrfTest } from "./ctrf-types.ts"
 import { writeTextFile } from "./files.ts"
+import { stubCallCounts } from "./mcp-stub-calls.ts"
 
 /** CTRF specification version the documents conform to (the official examples use `1.0.0`). */
 export const CTRF_SPEC_VERSION = "1.0.0"
@@ -67,6 +68,7 @@ function toTest(trial: TrialResult): CtrfTest {
   const agent = trial.agentResult
   const scores = trial.grades.flatMap((g) => (g.score === undefined ? [] : [g.score]))
   const judged = mergeJudgeUsage(trial.grades.flatMap((g) => g.judgeUsage ?? []))
+  const stubCalls = agent && stubCallCounts(agent.toolCalls)
   return {
     name: trialLabel(trial),
     status: trial.status,
@@ -96,6 +98,8 @@ function toTest(trial: TrialResult): CtrfTest {
       judgeModel: judged?.model,
       judgeTranscripts: judged?.transcripts,
       judgeTruncated: judged?.truncated,
+      mcpStubCalls: stubCalls?.calls,
+      mcpStubFallbacks: stubCalls?.fallbacks,
     },
   }
 }
@@ -150,6 +154,8 @@ const ctrfSchema = z.looseObject({
             judgeCalls: optionalNum,
             judgeCostUsd: optionalNum,
             judgeModel: z.string().optional(),
+            mcpStubCalls: optionalNum,
+            mcpStubFallbacks: optionalNum,
           })
           .optional(),
       }),

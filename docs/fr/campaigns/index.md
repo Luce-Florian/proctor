@@ -7,6 +7,7 @@ De vraies exécutions qui valident le harnais contre un vrai agent : isolation, 
 | [2026-09-30 : isolation et parité](./2026-09-30-isolation-parity.md) | la sonde d'isolation sous `srt` et `local-temp` ; la parité avec le banc bash sur un thème de code review et des thèmes historiques |
 | [2026-09-30 : juge](./2026-09-30-judge.md) | la stabilité de `judge()` sur 3 rejugements, les thèmes oui/non sans juge, le rapport HTML |
 | [2026-10-02 : thème porté](./2026-10-02-ported-theme.md) | un thème porté en `*.eval.ts` comparé au loader historique |
+| [2026-11-12 : stubs MCP](./2026-11-12-mcp-stub.md) | les stubs MCP sous `srt` avec un vrai agent : réponses ancrées dans le stub, serveur d'un plugin remplacé sous son propre nom |
 
 ## Lancer une campagne
 

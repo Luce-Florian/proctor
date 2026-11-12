@@ -24,6 +24,7 @@ describe("judge()", () => {
       model: "claude-sonnet-5",
       plugins: [],
       mcpServers: {},
+      mcpStubs: [],
       settings: {},
     })
     expect(judgeRuntime.calls[0]?.prompt).toContain('{"id":"date-filter","type":"principal","text":"Flags the inverted filter"}')

@@ -2,6 +2,7 @@ import { aggregatesOf, extraOf, groupOf, type Ablation, type GroupAggregate } fr
 import { siblingPath, type CtrfSink } from "./ctrf.ts"
 import type { CtrfReport, CtrfTest } from "./ctrf-types.ts"
 import { writeTextFile } from "./files.ts"
+import { unanticipatedCallNotes } from "./mcp-stub-calls.ts"
 import { duration, NONE, percent, points, score, signed, signedUsd, usd, usdMeanSd, type RenderOptions } from "./format.ts"
 
 const caseOf = (test: CtrfTest) => groupOf(test).caseId
@@ -191,7 +192,9 @@ ${summary(report, aggregates.judge.costUsd, aggregates.judge.calls)}
   <span><span class="cell na">${NONE}</span>not graded (infrastructure error)</span><span>Decoy met = false positive avoided · ablation: variant mean − ${esc(aggregates.baseline)} mean</span>
 </div>
 ${byCase.join("\n")}
-<section><h2>Trials</h2>${trialsTable(tests)}</section>
+<section><h2>Trials</h2>${trialsTable(tests)}${unanticipatedCallNotes(tests)
+    .map(({ trial, note }) => `<p class="msg"><b>Unanticipated MCP calls:</b> ${esc(trial)}: ${esc(note)}</p>`)
+    .join("")}</section>
 ${suiteErrors.map((e) => `<p class="msg"><b>Suite error:</b> ${esc(e)}</p>`).join("")}
 </div>
 <div id="view-json" role="tabpanel" aria-labelledby="tab-json" hidden>

@@ -11,6 +11,7 @@ The adapter reads the `system/init` event of every run.
 | an undeclared MCP server or `mcp__*` tool | trial `other`, run killed at that event; a slash command may have started a background task just before (seen with `/code-review`) |
 | an undeclared plugin (built-in plugins aside) | same |
 | a declared plugin that is missing, e.g. unreadable under srt | same |
+| an MCP stub that is neither `connected` nor `pending`, or connected without a tool it declares | trial `other`, run killed at that event; stubs count as declared servers, and a `pending` stub is left to its own log after the run |
 | a `SessionStart` hook started before `init` while the variant declares none and has no plugin (host managed settings?) | same |
 
 `system/init` also lists `skills` and `agents`, but without telling built-in ones apart: the probe does not compare them. Hooks other than `SessionStart` emit no event before `init`.

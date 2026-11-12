@@ -66,6 +66,19 @@ export default defineConfig(
             { from: src("core"), to: ["src"], allow: [src("core"), src("ports"), src("shared")] },
             // Ports are the innermost layer: core depends on them, never the reverse.
             { from: src("ports"), to: ["src"], allow: [src("ports"), src("shared")] },
+            // The MCP stub runtime is shared by every agent adapter: it knows ports and how to run a process, never an agent.
+            {
+              from: src("adapters", "mcp-stub"),
+              to: ["src"],
+              allow: [src("adapters", "mcp-stub"), src("adapters", "process.ts"), src("ports"), src("shared")],
+              hint: "keep src/adapters/mcp-stub/ agent-neutral: agent adapters import it, never the reverse",
+            },
+            // Graders and test doubles hold for every agent: they read results and ports, never a concrete adapter.
+            ...[src("graders"), src("testing")].map((from) => ({
+              from,
+              to: [src("adapters")],
+              hint: "keep it agent-neutral: import the port (src/ports/, e.g. mcp-stub-rules.mjs), and let the CLI wire the adapter",
+            })),
             // Plain utilities (paths, text, ids): a leaf every layer may use, so it imports none of them.
             { from: src("shared"), to: ["src"], allow: [src("shared")], hint: "keep src/shared/ free of the package's layers" },
             {

@@ -3,6 +3,7 @@ import { duration, NONE, percent, points, score, signed, signedUsd, usd, usdMean
 import { siblingPath, type CtrfSink } from "./ctrf.ts"
 import type { CtrfReport, CtrfTest } from "./ctrf-types.ts"
 import { writeTextFile } from "./files.ts"
+import { unanticipatedCallNotes } from "./mcp-stub-calls.ts"
 
 /**
  * Renders a CTRF document as a markdown summary. Reads only the CTRF, so it also works on archived reports.
@@ -39,6 +40,7 @@ export function renderMarkdown(report: CtrfReport, options: RenderOptions = {}):
     "|---|---|---|---|---|---|---|---|",
     ...tests.map(row),
     "",
+    ...unanticipatedCallNotes(tests).map(({ trial, note }) => `**Unanticipated MCP calls:** ${trial}: ${note}\n`),
     "## Aggregates",
     "",
     "| Case | Variant | Passed | Criteria | Decoys | Principal | Score | Cost | Judge |",

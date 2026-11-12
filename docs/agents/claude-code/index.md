@@ -32,6 +32,7 @@ sequenceDiagram
     end
     C-->>H: result event
     Note over H: AgentRunResult: finalText, toolCalls, cost, model
+    Note over H: MCP stubs: their logs prove they served, toolCalls get mcp (collectStubCalls)
 ```
 
 ```sh
@@ -55,7 +56,8 @@ npx proctor run path/to/review.eval.ts --agent claude-code --case <case-id> --re
 | `CLAUDE_CONFIG_DIR=<sandbox home>/.claude` | blank config; without it, the CLI would read the keychain entry of the host's default config |
 | `--setting-sources user` | reads only the `settings.json` of that temporary directory: neither the host's, nor the `.claude/settings*.json` of the cloned repo |
 | `--settings <json>` | the variant's settings (model, hooks) |
-| `--strict-mcp-config --mcp-config <json>` | only the declared MCP servers, no claude.ai connector |
+| `--strict-mcp-config --mcp-config <json>` | only the declared MCP servers and the [MCP stubs](./plugins.md#mcp-servers-of-a-plugin) of the variant (stdio, `node` by absolute path); no claude.ai connector, no server of a loaded plugin |
+| `--allowedTools mcp__<stub>` | every permission level, `readonly` included, calls the MCP stubs without asking: a stub has no side effect |
 | `--plugin-dir <copy>` | directory plugin, **copied** into the sandbox home |
 | `--no-session-persistence`, `--output-format stream-json --verbose` | nothing to resume; the stream is the transcript |
 | prompt on **stdin**, not as an argument | `claude -p` reads it when no prompt is passed (checked offline: without stdin, "Input must be provided either through stdin or as a prompt argument"); no argument size limit (128 KiB on Linux), and srt does not re-quote the prompt (each `'` takes 5 bytes there); srt forwards stdin, tested by `srt.integration.test.ts` |

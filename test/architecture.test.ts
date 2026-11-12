@@ -17,6 +17,7 @@ describe("import boundaries (lint)", () => {
     ["src/ports/agent.ts", 'export * from "../adapters/sandboxes/srt/sandbox.ts"'],
     ["src/core/lifecycle.ts", 'const m = await import("../reporters/ctrf.ts")'],
     ["src/ports/reporter.ts", 'import type { SuiteDefinition } from "../core/model.ts"'],
+    ["src/ports/mcp-stub-rules.mjs", 'import { materializeStubs } from "../adapters/mcp-stub/materialize.ts"'],
   ])("blocks %s from importing an outer layer", async (file, code) => {
     expect(await boundaryErrors(file, code)).toEqual([expect.stringMatching(/must not import src\/(adapters|reporters|core)\//)])
   })
@@ -47,6 +48,24 @@ describe("import boundaries (lint)", () => {
       expect.stringContaining("src/shared/ must not import src/ports/"),
     ])
   })
+
+  it("keeps the MCP stub runtime agent-neutral: it imports ports, never an agent adapter", async () => {
+    const code = 'import { claudeArgs } from "../agents/claude-code/flags.ts"'
+
+    expect(await boundaryErrors("src/adapters/mcp-stub/materialize.ts", code)).toEqual([
+      expect.stringContaining("src/adapters/mcp-stub/ must not import src/adapters/: keep src/adapters/mcp-stub/ agent-neutral"),
+    ])
+  })
+
+  it.each(["src/graders/tool-used.ts", "src/testing/fake-agent.ts"])(
+    "keeps %s agent-neutral: it imports the stub rules from ports, never an adapter",
+    async (file) => {
+      expect(await boundaryErrors(file, 'import { matchesInput } from "../adapters/mcp-stub/stub-server.mjs"')).toEqual([
+        expect.stringContaining("must not import src/adapters/: keep it agent-neutral"),
+      ])
+      expect(await boundaryErrors(file, 'import { matchesInput } from "../ports/mcp-stub-rules.mjs"')).toEqual([])
+    },
+  )
 
   it("refuses an import() of a computed path, which no static check can follow, outside the eval-ts loader", async () => {
     const code = "export const load = (path: string): Promise<unknown> => import(path)"
@@ -108,12 +127,15 @@ describe("code conventions (lint)", () => {
 })
 
 describe("agnosticism", () => {
-  it.each(["src/core", "src/ports"])("%s never mentions a concrete agent, sub-directories included", async (dir) => {
-    const entries = await readdir(join(root, dir), { recursive: true, withFileTypes: true })
-    const files = entries.filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name))
-    expect(files.length).toBeGreaterThan(0)
-    for (const file of files) {
-      expect(await readFile(file, "utf8"), file).not.toMatch(/claude/i)
-    }
-  })
+  it.each(["src/core", "src/ports", "src/adapters/mcp-stub"])(
+    "%s never mentions a concrete agent, sub-directories included",
+    async (dir) => {
+      const entries = await readdir(join(root, dir), { recursive: true, withFileTypes: true })
+      const files = entries.filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name))
+      expect(files.length).toBeGreaterThan(0)
+      for (const file of files) {
+        expect(await readFile(file, "utf8"), file).not.toMatch(/claude/i)
+      }
+    },
+  )
 })

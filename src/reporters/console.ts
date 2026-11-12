@@ -1,6 +1,7 @@
 import { countByStatus, trialLabel } from "../core/trial-summary.ts"
 import type { Reporter } from "../ports/reporter.ts"
 import { TRIAL_STATUSES, type RunInfo, type RunResult, type TrialResult, type TrialStatus } from "../ports/run.ts"
+import { stubCallCounts, unanticipatedCalls } from "./mcp-stub-calls.ts"
 
 const TAG: Record<TrialStatus, string> = { passed: "PASS ", failed: "FAIL ", other: "OTHER", skipped: "SKIP " }
 
@@ -33,6 +34,8 @@ export class ConsoleReporter implements Reporter {
   onTrialEnd(trial: TrialResult): void {
     const message = trial.message ? ` — ${trial.message}` : ""
     this.#out.write(`${TAG[trial.status]} ${trialLabel(trial)} (${trial.stop - trial.start}ms)${message}\n`)
+    const fallbacks = stubCallCounts(trial.agentResult?.toolCalls ?? [])?.fallbacks ?? 0
+    if (fallbacks > 0) this.#out.write(`      note: ${unanticipatedCalls(fallbacks)}\n`)
   }
 
   /** @example "3 trials: 2 passed, 1 failed, 0 other, 0 skipped" */

@@ -17,6 +17,8 @@ export interface FakeAgentOptions {
   readonly reply?: (input: AgentRunInput, workspace: Workspace) => FakeReply | Promise<FakeReply>
   /** Simulated run duration in milliseconds, fixed or computed per call. Default 0. Honours the abort signal. */
   readonly delayMs?: number | (() => number)
+  /** What the sandbox must let through, as a real agent declares it, fixed or per trial. Default: nothing. */
+  readonly sandboxAccess?: NonNullable<AgentAdapter["sandboxAccess"]>
 }
 
 /**
@@ -29,6 +31,7 @@ export interface FakeAgentOptions {
  */
 export class FakeAgentAdapter implements AgentAdapter {
   readonly id: string
+  readonly sandboxAccess?: NonNullable<AgentAdapter["sandboxAccess"]>
   /** Inputs received, in call order. */
   readonly calls: AgentRunInput[] = []
   /** Highest number of runs observed in flight at the same time. */
@@ -39,6 +42,7 @@ export class FakeAgentAdapter implements AgentAdapter {
   constructor(options: FakeAgentOptions = {}) {
     this.#options = options
     this.id = options.id ?? "fake"
+    if (options.sandboxAccess) this.sandboxAccess = options.sandboxAccess
   }
 
   /** @example await new FakeAgentAdapter({ version: "1.2.3" }).version() // "1.2.3" */

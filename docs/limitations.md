@@ -8,4 +8,8 @@
 - A legacy theme whose tool writes outside the trial or restores packages from a registry has no parity under srt: `dotnet` writes to `/tmp/.dotnet` and restores from NuGet, which the legacy format cannot declare. [Port such a theme](./legacy/porting.md) to `*.eval.ts`, with `.allowWrite("/tmp/.dotnet")` and `.allowDomains(...)`.
 - A fixture (`git clone`) does not receive the interruption signal: Ctrl-C stops it through the terminal's process group, a `SIGTERM` sent to the harness alone lets it finish.
 - Each trial clones the repo again and reinstalls the marketplace plugins: correct but slow, a cache per `(url, commit)` will come later.
+- `--strict-mcp-config` drops, silently, the MCP servers a loaded plugin declares: a skill that needs one runs without it, unless the variant declares an [MCP stub](./writing-evals/mcp-stubs.md) of the same name.
+- An MCP stub only serves tools over stdio: no resources, prompts or notifications, no HTTP transport, no input checked against the schema.
+- The agent can read the stub configuration, answers included, in its sandbox home (`.proctor/mcp/`), and write the call log: the stream stays the source of truth for what it called. A log it turned into a link or a special file, or grew past 4 MiB, ends the trial `other`.
+- A large tool catalog may be deferred by Claude Code behind a tool search; 15 tools were not. Check it with the real catalog of a suite.
 - A `*.eval.ts` must be an ES module: see [Getting started](./getting-started.md#install).

@@ -20,25 +20,34 @@ flowchart LR
 proctor/
 ├── bin/proctor.js        # registers tsx, then runs src/cli/main.ts: no build
 ├── src/
-│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (results)
+│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (results), mcp-stub (stub data)
+│   │   └── mcp-stub-rules.mjs   # how a stub answers (matchers, responder), no import: shared by the stub program and the graders
 │   ├── core/
 │   │   ├── model.ts         # definitions and zod schemas
+│   │   ├── mcp-stubs.ts     # MCP stub checks, case rules merged into the variant stubs (stubsFor)
 │   │   ├── trial-summary.ts # trialLabel, countByStatus
 │   │   ├── matrix.ts        # case × variant × repetition, filters
 │   │   ├── orchestrator.ts  # beforeAll/afterAll, -j (p-limit), reporters
 │   │   ├── lifecycle.ts     # one trial: hooks, try/finally, LIFO fixtures, status
 │   │   ├── errors.ts · timeout.ts · duration.ts · exit-code.ts
-│   ├── dsl/                 # fluent builders: suite, variant, case
+│   ├── dsl/                 # fluent builders: suite, variant, case, mcpStub
 │   ├── adapters/
 │   │   ├── process.ts       # runs a command, explicit env, kills the group on abort and on exit
 │   │   ├── redact.ts        # masks the credential and any Anthropic key in the stream
+│   │   ├── mcp-stub/        # agent-neutral MCP stubs, shared by every agent adapter
+│   │   │   ├── stub-server.mjs  # stdio MCP server of tools, Node built-ins and the rules only, run by the agent in the sandbox
+│   │   │   ├── materialize.ts   # copies the program and the rules, writes the configs in the trial home, one entry per stub
+│   │   │   ├── call-log.ts      # reads what each stub logged; checkStubsReady; collectStubCalls (after a run)
+│   │   │   └── handshake.ts     # starts the stubs through the sandbox, for the fake agent
 │   │   ├── agents/claude-code/
 │   │   │   ├── adapter.ts       # version, prepare, run: env, sandbox wrap, transcript
 │   │   │   ├── credentials.ts   # auth profiles, API domains per profile
 │   │   │   ├── flags.ts         # AgentRunInput → CLI flags
 │   │   │   ├── plugins.ts       # references (name, path, marketplace), copy, marketplace, fingerprint
 │   │   │   ├── stream-parser.ts # stream-json → AgentRunResult, toolCalls
-│   │   │   └── init-probe.ts    # system/init → undeclared MCP or plugin; undeclared SessionStart hook
+│   │   │   ├── mcp-stubs.ts     # MCP stub named after a loaded plugin's server, mcp__<server>__<tool> → (stub, tool)
+│   │   │   ├── tool-names.ts    # mcp__<server> and mcp__<server>__ of an MCP server
+│   │   │   └── init-probe.ts    # system/init → undeclared MCP or plugin; undeclared SessionStart hook; stub failed or absent
 │   │   └── sandboxes/
 │   │       ├── temp-layout.ts         # root/{work,home,tmp} of a trial, allowlisted env
 │   │       ├── local-temp/sandbox.ts  # the layout alone: isolation degraded
@@ -49,12 +58,12 @@ proctor/
 │   │                        # tool-used, verdict-equals, answer-shape (+ yes-no-contract), limits, llm-judge (+ judge-protocol)
 │   ├── reporters/           # ctrf(-types), aggregates, markdown and html (CTRF sinks), console, files
 │   ├── loaders/             # registry, eval-ts, legacy-json, legacy-verdicts (oui/non → verdict, shape, judge on oui)
-│   ├── testing/             # FakeAgentAdapter, FakeSandbox (export "@fluce/proctor/testing")
-│   ├── shared/              # leaf utilities (fs, text, ids), importable by every layer
+│   ├── testing/             # FakeAgentAdapter, FakeSandbox, answerStub (export "@fluce/proctor/testing")
+│   ├── shared/              # leaf utilities (fs, text, ids, arrays), importable by every layer
 │   └── cli/                 # main (commander), run, report, list, registry, host, interrupt (Ctrl-C)
 ├── eslint/import-boundaries.js
 ├── scripts/fingerprint-claude-home.ts, rejudge.ts
-├── examples/hello.eval.ts   # covered by test/cli.test.ts
+├── examples/hello.eval.ts, mcp-stub.eval.ts  # covered by test/cli.test.ts
 ├── suites/isolation-probe.eval.ts  # covered by test/isolation-probe.test.ts
 └── test/                    # behavior tests (*.test.ts); unit specs sit next to the sources (*.spec.ts)
     ├── support/             # imported through #test/*: setup.ts (no network, no credential), helpers, ctrf-schema, typecheck
@@ -67,9 +76,10 @@ proctor/
 The `local/import-boundaries` lint rule blocks:
 - any relative import that leaves the package root;
 - any import of `adapters/`, `auth/`, `cli/`, `dsl/`, `fixtures/`, `graders/`, `loaders/`, `reporters/`, `testing/` or `src/index.ts` from `core/` or `ports/`, relative or by the package name (`proctor`, `@fluce/proctor/testing`);
-- any import of `core/` from `ports/`: the ports are the innermost layer.
+- any import of `core/` from `ports/`: the ports are the innermost layer;
+- any import of `adapters/` from `graders/` or `testing/`: they hold for every agent, and read the stub rules from `ports/mcp-stub-rules.mjs`.
 
-- `core/`, `ports/`, `shared/` and `test/` each list what they **may** import from `src/`: everything else, a folder added later included, is refused by default.
+- `core/`, `ports/`, `shared/`, `adapters/mcp-stub/` and `test/` each list what they **may** import from `src/`: everything else, a folder added later included, is refused by default.
 - `test/architecture.test.ts` relints the whole tree with `allowInlineConfig: false`: an `// eslint-disable` hides nothing in `npm test`.
 - A computed `import(path)` is refused everywhere except `loaders/eval-ts.ts`, which loads the user's `*.eval.ts`.
 

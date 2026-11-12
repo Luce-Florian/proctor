@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { cp, mkdir, readdir, readFile, stat } from "node:fs/promises"
 import { basename, isAbsolute, join, relative } from "node:path"
 import { z } from "zod"
+import { asError } from "../../../core/errors.ts"
 import { isDirectory } from "../../../shared/fs.ts"
 
 /** A plugin loaded from a directory of the host, copied into the sandbox home and passed with `--plugin-dir`. */
@@ -124,4 +125,44 @@ export async function pluginFingerprint(directories: readonly string[], installe
   }
   for (const id of installed) digest.update(`installed ${id}\n`)
   return digest.digest("hex")
+}
+
+const installedPlugins = z.object({
+  plugins: z.record(z.string(), z.array(z.object({ installPath: z.string() }))),
+})
+
+/**
+ * Where `claude plugin install` put the marketplace plugins, read once from `plugins/installed_plugins.json` of the
+ * config directory `configDir` (the CLI chooses it, not the harness). The lookup throws for a plugin it did not install.
+ *
+ * @example
+ * const installPath = await installedPluginPaths("/tmp/ws/home/.claude")
+ * installPath("caveman@caveman") // "/tmp/ws/home/.claude/plugins/cache/caveman/caveman/1.0.0"
+ */
+export async function installedPluginPaths(configDir: string): Promise<(id: string) => string> {
+  const file = join(configDir, "plugins", "installed_plugins.json")
+  const parsed = installedPlugins.safeParse(await readJson(file))
+  const installed = parsed.success ? parsed.data.plugins : {}
+  return (id) => {
+    const path = installed[id]?.[0]?.installPath
+    if (path === undefined)
+      throw new Error(`claude plugin install ${id} left no install path in ${file}: cannot read the MCP servers it declares`)
+    return path
+  }
+}
+
+/**
+ * The parsed JSON file at `path`, `undefined` when it does not exist; throws, naming the file, when it is not JSON.
+ *
+ * @example
+ * await readJson("/ws/home/.proctor/plugins/0-dbtools/.mcp.json") // { mcpServers: { pgsql: {...} } }
+ */
+export async function readJson(path: string): Promise<unknown> {
+  const text = await readFile(path, "utf8").catch(() => undefined)
+  if (text === undefined) return undefined
+  try {
+    return JSON.parse(text) as unknown
+  } catch (error) {
+    throw new Error(`${path} is not valid JSON: fix the plugin's manifest (${asError(error).message})`)
+  }
 }

@@ -2,6 +2,8 @@ import { join } from "node:path"
 import { ClaudeCodeAdapter } from "../adapters/agents/claude-code/adapter.ts"
 import { CLAUDE_AUTH_PROFILES } from "../adapters/agents/claude-code/credentials.ts"
 import { LocalTempSandbox } from "../adapters/sandboxes/local-temp/sandbox.ts"
+import { handshakeStubs } from "../adapters/mcp-stub/handshake.ts"
+import { STUB_RUNTIME_DIR } from "../adapters/mcp-stub/materialize.ts"
 import { probeSandbox } from "../adapters/sandboxes/probe.ts"
 import { SrtSandbox } from "../adapters/sandboxes/srt/sandbox.ts"
 import { resolveCredential } from "../auth/credential-resolver.ts"
@@ -32,11 +34,15 @@ export type Registry<T> = Readonly<Record<string, (options: FactoryOptions) => T
 
 /** `--agent <id>`. Add an agent by adding its adapter file and one line here. */
 export const agents: Registry<AgentAdapter> = {
-  // Probes the sandbox before answering: `--agent fake --sandbox srt` checks srt for free, the fake sandbox runs nothing.
+  // Probes the sandbox and starts the MCP stubs in it before answering: `--agent fake --sandbox srt` checks srt and the
+  // stubs for free, the fake sandbox runs nothing.
   fake: () =>
     new FakeAgentAdapter({
+      // The node that runs the stubs, readable in a trial with stubs, as a real agent declares it.
+      sandboxAccess: (input) => ({ allowedDomains: [], readablePaths: input.mcpStubs.length > 0 ? [STUB_RUNTIME_DIR] : [] }),
       reply: async (input, workspace) => {
         await probeSandbox(workspace, input.signal)
+        await handshakeStubs(input.mcpStubs, workspace, input.signal)
         return `echo: ${input.prompt}`
       },
     }),

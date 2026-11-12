@@ -20,25 +20,34 @@ flowchart LR
 proctor/
 ├── bin/proctor.js        # enregistre tsx, puis lance src/cli/main.ts : pas de build
 ├── src/
-│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (résultats)
+│   ├── ports/               # AgentAdapter, Sandbox, Grader, Fixture, Reporter, Workspace, run (résultats), mcp-stub (données des stubs)
+│   │   └── mcp-stub-rules.mjs   # comment un stub répond (motifs, répondeur), sans import : partagé par le programme du stub et les évaluateurs
 │   ├── core/
 │   │   ├── model.ts         # définitions et schémas zod
+│   │   ├── mcp-stubs.ts     # contrôles des stubs MCP, règles du cas fusionnées dans les stubs de la variante (stubsFor)
 │   │   ├── trial-summary.ts # trialLabel, countByStatus
 │   │   ├── matrix.ts        # cas × variante × répétition, filtres
 │   │   ├── orchestrator.ts  # beforeAll/afterAll, -j (p-limit), reporters
 │   │   ├── lifecycle.ts     # un essai : hooks, try/finally, fixtures LIFO, statut
 │   │   ├── errors.ts · timeout.ts · duration.ts · exit-code.ts
-│   ├── dsl/                 # builders fluents : suite, variante, cas
+│   ├── dsl/                 # builders fluents : suite, variante, cas, mcpStub
 │   ├── adapters/
 │   │   ├── process.ts       # lance une commande, env explicite, tue le groupe à l'annulation et à la sortie
 │   │   ├── redact.ts        # masque l'identifiant et toute clé Anthropic dans le flux
+│   │   ├── mcp-stub/        # stubs MCP neutres vis-à-vis de l'agent, partagés par tous les adaptateurs d'agent
+│   │   │   ├── stub-server.mjs  # serveur MCP d'outils en stdio, built-ins Node et règles seulement, lancé par l'agent dans la sandbox
+│   │   │   ├── materialize.ts   # copie le programme et les règles, écrit les configurations dans le home de l'essai, une entrée par stub
+│   │   │   ├── call-log.ts      # lit ce que chaque stub a journalisé ; checkStubsReady ; collectStubCalls (après une exécution)
+│   │   │   └── handshake.ts     # lance les stubs à travers la sandbox, pour l'agent fake
 │   │   ├── agents/claude-code/
 │   │   │   ├── adapter.ts       # version, prepare, run : env, enveloppe de sandbox, transcript
 │   │   │   ├── credentials.ts   # profils d'authentification, domaines d'API par profil
 │   │   │   ├── flags.ts         # AgentRunInput → options de la CLI
 │   │   │   ├── plugins.ts       # références (nom, chemin, marketplace), copie, marketplace, empreinte
 │   │   │   ├── stream-parser.ts # stream-json → AgentRunResult, toolCalls
-│   │   │   └── init-probe.ts    # system/init → MCP ou plugin non déclaré ; hook SessionStart non déclaré
+│   │   │   ├── mcp-stubs.ts     # stub MCP nommé d'après le serveur d'un plugin chargé, mcp__<server>__<tool> → (stub, outil)
+│   │   │   ├── tool-names.ts    # mcp__<server> et mcp__<server>__ d'un serveur MCP
+│   │   │   └── init-probe.ts    # system/init → MCP ou plugin non déclaré ; hook SessionStart non déclaré ; stub en échec ou absent
 │   │   └── sandboxes/
 │   │       ├── temp-layout.ts         # root/{work,home,tmp} d'un essai, env en liste d'autorisation
 │   │       ├── local-temp/sandbox.ts  # l'arborescence seule : isolation degraded
@@ -49,12 +58,12 @@ proctor/
 │   │                        # tool-used, verdict-equals, answer-shape (+ yes-no-contract), limits, llm-judge (+ judge-protocol)
 │   ├── reporters/           # ctrf(-types), aggregates, markdown et html (sinks CTRF), console, files
 │   ├── loaders/             # registry, eval-ts, legacy-json, legacy-verdicts (oui/non → verdict, forme, juge sur oui)
-│   ├── testing/             # FakeAgentAdapter, FakeSandbox (export "@fluce/proctor/testing")
-│   ├── shared/              # utilitaires feuilles (fs, text, ids), importables par chaque couche
+│   ├── testing/             # FakeAgentAdapter, FakeSandbox, answerStub (export "@fluce/proctor/testing")
+│   ├── shared/              # utilitaires feuilles (fs, text, ids, arrays), importables par chaque couche
 │   └── cli/                 # main (commander), run, report, list, registry, host, interrupt (Ctrl-C)
 ├── eslint/import-boundaries.js
 ├── scripts/fingerprint-claude-home.ts, rejudge.ts
-├── examples/hello.eval.ts   # couvert par test/cli.test.ts
+├── examples/hello.eval.ts, mcp-stub.eval.ts  # couverts par test/cli.test.ts
 ├── suites/isolation-probe.eval.ts  # couvert par test/isolation-probe.test.ts
 └── test/                    # tests de comportement (*.test.ts) ; les specs unitaires sont à côté des sources (*.spec.ts)
     ├── support/             # importé via #test/* : setup.ts (ni réseau, ni identifiant), helpers, ctrf-schema, typecheck
@@ -67,9 +76,10 @@ proctor/
 La règle de lint `local/import-boundaries` bloque :
 - tout import relatif qui sort de la racine du package ;
 - tout import de `adapters/`, `auth/`, `cli/`, `dsl/`, `fixtures/`, `graders/`, `loaders/`, `reporters/`, `testing/` ou `src/index.ts` depuis `core/` ou `ports/`, en relatif ou par le nom du package (`proctor`, `@fluce/proctor/testing`) ;
-- tout import de `core/` depuis `ports/` : les ports sont la couche la plus interne.
+- tout import de `core/` depuis `ports/` : les ports sont la couche la plus interne ;
+- tout import de `adapters/` depuis `graders/` ou `testing/` : ils valent pour tout agent, et lisent les règles des stubs dans `ports/mcp-stub-rules.mjs`.
 
-- `core/`, `ports/`, `shared/` et `test/` listent chacun ce qu'ils **peuvent** importer de `src/` : tout le reste, y compris un dossier ajouté plus tard, est refusé par défaut.
+- `core/`, `ports/`, `shared/`, `adapters/mcp-stub/` et `test/` listent chacun ce qu'ils **peuvent** importer de `src/` : tout le reste, y compris un dossier ajouté plus tard, est refusé par défaut.
 - `test/architecture.test.ts` relance le lint sur tout l'arbre avec `allowInlineConfig: false` : un `// eslint-disable` ne cache rien dans `npm test`.
 - Un `import(path)` calculé est refusé partout sauf dans `loaders/eval-ts.ts`, qui charge le `*.eval.ts` de l'utilisateur.
 

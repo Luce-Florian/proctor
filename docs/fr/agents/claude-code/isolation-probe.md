@@ -11,6 +11,7 @@ L'adaptateur lit l'événement `system/init` de chaque exécution.
 | un serveur MCP ou un outil `mcp__*` non déclaré | essai `other`, exécution tuée à cet événement ; une slash command a pu lancer une tâche d'arrière-plan juste avant (vu avec `/code-review`) |
 | un plugin non déclaré (plugins intégrés mis à part) | idem |
 | un plugin déclaré mais absent, par exemple illisible sous srt | idem |
+| un stub MCP qui n'est ni `connected` ni `pending`, ou connecté sans un outil qu'il déclare | essai `other`, exécution tuée à cet événement ; les stubs comptent comme des serveurs déclarés, et un stub `pending` est laissé à son propre journal après l'exécution |
 | un hook `SessionStart` lancé avant `init` alors que la variante n'en déclare aucun et n'a pas de plugin (réglages gérés de l'hôte ?) | idem |
 
 `system/init` liste aussi `skills` et `agents`, mais sans distinguer les intégrés : la sonde ne les compare pas. Les hooks autres que `SessionStart` n'émettent aucun événement avant `init`.

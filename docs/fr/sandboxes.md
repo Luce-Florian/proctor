@@ -26,6 +26,8 @@ Avec une vraie sandbox, `--agent fake` y lance une commande shell, dans l'espace
 npx proctor run examples/hello.eval.ts --agent fake --sandbox srt
 ```
 
+Avec des stubs MCP, il lance ensuite chaque stub à travers la sandbox et lui fait lister ses outils : `node` doit être lisible, le journal modifiable. Un échec finit l'essai en `other` avec `The MCP stub "pgsql" did not start in the sandbox`. L'agent fake n'appelle aucun outil : les évaluateurs qui attendent des appels au stub échouent lors d'un essai à blanc.
+
 Quand la vérification échoue, l'essai finit en `other` avec un message qui commence par `The sandbox did not run a command in the workspace`, suivi de l'erreur de la sandbox elle-même. Une suite avec `judge()` finit aussi en `other` sous le juge fake, par construction : un job de CI distingue les deux par ce message dans le CTRF.
 
 ## La politique `srt`
@@ -40,10 +42,11 @@ disque de l'hôte                           ce qu'un essai voit sous srt
 │   ├── ae-review-basel-a1b2c3/            la racine de cet essai, pas rouverte elle-même
 │   │   ├── srt-settings.json              masqué : la politique, lue par srt hors du sandbox
 │   │   ├── work/                          modifiable : cwd, l'espace de travail
-│   │   ├── home/                          modifiable : HOME, XDG_*, .claude/, .proctor/plugins/
+│   │   ├── home/                          modifiable : HOME, XDG_*, .claude/, .proctor/plugins/, .proctor/mcp/
 │   │   └── tmp/                           modifiable : TMPDIR, CLAUDE_CODE_TMPDIR
 │   └── ae-review-with--d4e5f6/            masqué : un autre essai (-j 2)
 ├── répertoire du binaire claude           lisible (sandboxAccess)
+├── répertoire de node                     lisible (sandboxAccess) dans un essai avec stubs MCP : il les exécute
 ├── chemins .allowRead() / .allowWrite()   lisible / modifiable
 └── /usr, /opt, /etc…                      lisible : binaires, bibliothèques, certificats
 ```
@@ -55,7 +58,7 @@ disque de l'hôte                           ce qu'un essai voit sous srt
 | `denyRead` | `/tmp`, `/private/tmp`, `/var/folders`, `/private/var/folders`, `/Volumes` (ceux qui existent) | `/tmp/claude-<uid>` contient les sorties des sessions Claude de l'hôte ; disques montés |
 | `allowRead` | `<root>/work`, `<root>/home`, `<root>/tmp` | jamais la racine elle-même : sous Linux, srt remonte en lecture seule un répertoire rouvert après les binds en écriture, ce qui rendrait l'espace de travail non modifiable et bloquerait bubblewrap au démarrage |
 | `allowRead` | le paquet `@anthropic-ai/sandbox-runtime` | sous Linux, srt lance son filtre seccomp depuis `vendor/seccomp`, dans le sandbox, et `node_modules` est souvent sous le home masqué |
-| `allowRead` | répertoire du binaire de l'agent, `.allowRead()`, `.allowWrite()` | ce que déclarent l'agent et la suite |
+| `allowRead` | répertoire du binaire de l'agent, répertoire de `node` (essais avec stubs MCP seulement), `.allowRead()`, `.allowWrite()` | ce que déclarent l'agent et la suite ; un `node` installé par nvm, fnm ou volta est sous le home masqué |
 | `allowWrite` | `<root>/work`, `<root>/home`, `<root>/tmp`, `.allowWrite()` | rien d'autre ; srt ajoute stdio et `/tmp/claude`, illisible ici |
 | `allowedDomains` | l'API du modèle pour le profil, `.allowDomains()` | tout le reste est bloqué par le proxy srt |
 | env | `CLAUDE_CODE_TMPDIR=<root>/tmp` | srt donne à la commande `TMPDIR=$CLAUDE_CODE_TMPDIR`, sinon `/tmp/claude`, partagé et masqué |

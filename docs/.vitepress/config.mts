@@ -36,6 +36,7 @@ const sections: readonly Section[] = [
       { path: "writing-evals/graders", title: { en: "Graders", fr: "Évaluateurs" } },
       { path: "writing-evals/yes-no-answers", title: { en: "Yes/no answers", fr: "Réponses oui/non" } },
       { path: "writing-evals/judge", title: { en: "LLM judge", fr: "Juge LLM" } },
+      { path: "writing-evals/mcp-stubs", title: { en: "MCP stubs", fr: "Stubs MCP" } },
       { path: "writing-evals/lifecycle", title: { en: "Lifecycle", fr: "Cycle de vie" } },
     ],
   },
@@ -81,6 +82,7 @@ const sections: readonly Section[] = [
       },
       { path: "campaigns/2026-09-30-judge", title: { en: "2026-09-30: judge", fr: "2026-09-30 : juge" } },
       { path: "campaigns/2026-10-02-ported-theme", title: { en: "2026-10-02: ported theme", fr: "2026-10-02 : thème porté" } },
+      { path: "campaigns/2026-11-12-mcp-stub", title: { en: "2026-11-12: MCP stubs", fr: "2026-11-12 : stubs MCP" } },
     ],
   },
   {
