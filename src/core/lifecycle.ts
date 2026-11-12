@@ -1,4 +1,4 @@
-import type { AgentAdapter, AgentPrepareInput, AgentRunInput, AgentRunResult } from "../ports/agent.ts"
+import { agentSandboxAccess, type AgentAdapter, type AgentPrepareInput, type AgentRunInput, type AgentRunResult } from "../ports/agent.ts"
 import type { GradeContext, GradeResult, JudgeRuntime } from "../ports/grader.ts"
 import type { TrialResult, TrialStatus } from "../ports/run.ts"
 import { mergeAccess, type Sandbox, type SandboxAccess } from "../ports/sandbox.ts"
@@ -63,14 +63,15 @@ export async function runTrial(plan: TrialPlan, runtime: TrialRuntime): Promise<
   const { signal } = runtime
 
   try {
-    const access = mergeAccess(runtime.agent.sandboxAccess, plan.sandboxAccess)
+    const setup = agentSetup(variant, testCase, signal)
+    const access = mergeAccess(agentSandboxAccess(runtime.agent, setup), plan.sandboxAccess)
     const workspace = await step("sandbox create", () => runtime.sandbox.create({ label: trialLabel(ids), access }))
     cleanups.push(["sandbox destroy", () => runtime.sandbox.destroy(workspace)])
     for (const fixture of testCase.fixtures) {
       const teardown = await step(`fixture ${fixture.description} setup`, () => fixture.setup(workspace))
       if (teardown) cleanups.push([`fixture ${fixture.description} teardown`, teardown])
     }
-    const undo = await step("agent prepare", () => runtime.agent.prepare?.(agentSetup(variant, testCase, signal), workspace))
+    const undo = await step("agent prepare", () => runtime.agent.prepare?.(setup, workspace))
     if (undo) cleanups.push(["agent prepare undo", undo])
     const context: TrialContext = { ...ids, workspace }
     // Pushed in reverse so that, once the stack unwinds, afterEach hooks run in declaration order.

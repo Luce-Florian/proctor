@@ -19,14 +19,14 @@ Ajoutez un agent, une sandbox, un évaluateur ou un reporter en **ajoutant un fi
 
 ## Les stubs MCP dans un nouvel agent
 
-Le programme du stub, sa configuration, son journal d'appels et `checkStubsReady()` vivent dans `src/adapters/mcp-stub/` et ne connaissent aucun agent. Un adaptateur d'agent qui exécute `AgentRunInput.mcpStubs` ne fait que remplir ce tableau.
+La façon dont un stub répond vit dans `src/ports/mcp-stub-rules.mjs` ; le programme du stub, sa configuration et son journal d'appels vivent dans `src/adapters/mcp-stub/`. Aucun ne connaît d'agent. Un adaptateur d'agent qui exécute `AgentRunInput.mcpStubs` ne fait que remplir ce tableau.
 
 | Obligation | Comment |
 |---|---|
 | Déclarer chaque stub comme un serveur MCP stdio | `materializeStubs(input.mcpStubs, workspace)` dans `prepare`, puis chaque entrée `{ name, command, args }` dans la configuration MCP propre à l'agent |
 | Ne charger que les serveurs déclarés | l'option propre à l'agent |
 | Laisser tout niveau de permission appeler un stub sans approbation | la liste d'autorisations propre à l'agent : un stub n'a aucun effet de bord |
-| Exécuter le stub dans la sandbox de l'essai | laisser l'agent le lancer, et ajouter `dirname(process.execPath)` à `sandboxAccess.readablePaths` |
-| Faire échouer un essai dont un stub n'a pas servi | après l'exécution, `checkStubsReady(input.mcpStubs, await readStubLogs(input.mcpStubs, workspace))` |
+| Exécuter le stub dans la sandbox de l'essai | laisser l'agent le lancer ; `sandboxAccess(input)` ajoute `STUB_RUNTIME_DIR` à `readablePaths` quand `input.mcpStubs` n'est pas vide |
+| Faire échouer un essai dont un stub n'a pas servi, marquer les appels auxquels un stub a répondu (`ToolCall.mcp`) | après l'exécution, `collectStubCalls(entries, workspace, toolCalls, parseToolName)`, où `parseToolName` lit `(stub, outil)` d'après le nommage propre à l'agent des outils MCP |
 
 Voir [Architecture](./architecture.md) pour les couches et leurs frontières d'import.

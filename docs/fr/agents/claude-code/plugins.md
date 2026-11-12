@@ -23,3 +23,13 @@ L'adaptateur définit la syntaxe de `.plugins(...)` : le cœur transporte des ch
 - `prepare` est une capacité optionnelle du port `AgentAdapter` : le cœur l'appelle après les fixtures, sans savoir ce qu'est un plugin.
 - `pluginSha` (sha256 des fichiers des plugins sous forme de répertoire et des ids installés) va dans le CTRF de chaque essai.
 - Chaque essai réinstalle les plugins de marketplace : correct mais lent, voir [Limitations connues](../../limitations.md).
+
+## Serveurs MCP d'un plugin
+
+`--strict-mcp-config` ne démarre jamais les serveurs MCP qu'un plugin déclare, dans son `.mcp.json` ou dans les `mcpServers` de son `plugin.json`, en ligne ou comme chemin(s) de tels fichiers (vérifié sur `2.1.286`).
+
+| Plugins chargés qui déclarent un serveur du nom du stub | Nom du stub MCP dans la session | Ses outils |
+|---|---|---|
+| aucun | `pgsql` | `mcp__pgsql__<tool>` |
+| un, `dbtools` | `plugin:dbtools:pgsql` | `mcp__plugin_dbtools_pgsql__<tool>`, les noms qu'attendent les skills du plugin |
+| deux | — | l'exécution s'arrête : `mcpStub "pgsql": plugins "dbtools" and "dba" both declare this server; load only one` |

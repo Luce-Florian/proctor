@@ -43,7 +43,9 @@ proctor/
 │   │   │   ├── flags.ts         # AgentRunInput → options de la CLI
 │   │   │   ├── plugins.ts       # références (nom, chemin, marketplace), copie, marketplace, empreinte
 │   │   │   ├── stream-parser.ts # stream-json → AgentRunResult, toolCalls
-│   │   │   └── init-probe.ts    # system/init → MCP ou plugin non déclaré ; hook SessionStart non déclaré
+│   │   │   ├── mcp-stubs.ts     # stub MCP nommé d'après le serveur d'un plugin chargé, mcp__<server>__<tool> → (stub, outil)
+│   │   │   ├── tool-names.ts    # mcp__<server> et mcp__<server>__ d'un serveur MCP
+│   │   │   └── init-probe.ts    # system/init → MCP ou plugin non déclaré ; hook SessionStart non déclaré ; stub en échec ou absent
 │   │   └── sandboxes/
 │   │       ├── temp-layout.ts         # root/{work,home,tmp} d'un essai, env en liste d'autorisation
 │   │       ├── local-temp/sandbox.ts  # l'arborescence seule : isolation degraded

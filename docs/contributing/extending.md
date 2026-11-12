@@ -19,14 +19,14 @@ Add an agent, a sandbox, a grader or a reporter by **adding a file** that implem
 
 ## MCP stubs in a new agent
 
-The stub program, its configuration, its call log and `checkStubsReady()` live in `src/adapters/mcp-stub/` and know no agent. An agent adapter that runs `AgentRunInput.mcpStubs` only fills this table.
+How a stub answers lives in `src/ports/mcp-stub-rules.mjs`; the stub program, its configuration and its call log live in `src/adapters/mcp-stub/`. Neither knows an agent. An agent adapter that runs `AgentRunInput.mcpStubs` only fills this table.
 
 | Obligation | How |
 |---|---|
 | Declare each stub as a stdio MCP server | `materializeStubs(input.mcpStubs, workspace)` in `prepare`, then each entry `{ name, command, args }` in the agent's own MCP configuration |
 | Load only the declared servers | the agent's own switch |
 | Let every permission level call a stub without approval | the agent's own allow-list: a stub has no side effect |
-| Run the stub inside the trial sandbox | let the agent spawn it, and add `dirname(process.execPath)` to `sandboxAccess.readablePaths` |
-| Fail a trial whose stub did not serve | after the run, `checkStubsReady(input.mcpStubs, await readStubLogs(input.mcpStubs, workspace))` |
+| Run the stub inside the trial sandbox | let the agent spawn it; `sandboxAccess(input)` adds `STUB_RUNTIME_DIR` to `readablePaths` when `input.mcpStubs` is not empty |
+| Fail a trial whose stub did not serve, mark the calls a stub answered (`ToolCall.mcp`) | after the run, `collectStubCalls(entries, workspace, toolCalls, parseToolName)`, where `parseToolName` reads `(stub, tool)` from the agent's own naming of MCP tools |
 
 See [Architecture](./architecture.md) for the layers and their import boundaries.

@@ -32,6 +32,7 @@ sequenceDiagram
     end
     C-->>H: événement result
     Note over H: AgentRunResult : finalText, toolCalls, coût, modèle
+    Note over H: stubs MCP : leurs journaux prouvent qu'ils ont servi (checkStubsReady), toolCalls reçoit mcp
 ```
 
 ```sh
@@ -55,7 +56,8 @@ npx proctor run path/to/review.eval.ts --agent claude-code --case <case-id> --re
 | `CLAUDE_CONFIG_DIR=<sandbox home>/.claude` | config vierge ; sans elle, la CLI lirait l'entrée du trousseau de la config par défaut de l'hôte |
 | `--setting-sources user` | ne lit que le `settings.json` de ce répertoire temporaire : ni celui de l'hôte, ni les `.claude/settings*.json` du dépôt cloné |
 | `--settings <json>` | les réglages de la variante (modèle, hooks) |
-| `--strict-mcp-config --mcp-config <json>` | seulement les serveurs MCP déclarés, aucun connecteur claude.ai |
+| `--strict-mcp-config --mcp-config <json>` | seulement les serveurs MCP déclarés et les [stubs MCP](./plugins.md#serveurs-mcp-d-un-plugin) de la variante (stdio, `node` par chemin absolu) ; aucun connecteur claude.ai, aucun serveur d'un plugin chargé |
+| `--allowedTools mcp__<stub>` | tout niveau de permission, `readonly` compris, appelle les stubs MCP sans demander : un stub n'a aucun effet de bord |
 | `--plugin-dir <copy>` | plugin sous forme de répertoire, **copié** dans le home de la sandbox |
 | `--no-session-persistence`, `--output-format stream-json --verbose` | rien à reprendre ; le flux est le transcript |
 | prompt sur **stdin**, pas en argument | `claude -p` le lit quand aucun prompt n'est passé (vérifié hors ligne : sans stdin, « Input must be provided either through stdin or as a prompt argument ») ; aucune limite de taille d'argument (128 Kio sous Linux), et srt ne re-quote pas le prompt (chaque `'` y prend 5 octets) ; srt transmet stdin, testé par `srt.integration.test.ts` |

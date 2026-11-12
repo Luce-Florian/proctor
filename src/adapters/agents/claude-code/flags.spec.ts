@@ -12,7 +12,7 @@ describe("claude flags", () => {
         settings: { hooks: {} },
         mcpServers: { docs: { command: "d" } },
       }),
-      { pluginDirs: ["/ws/home/.proctor/plugins/0-sdlc"] },
+      { pluginDirs: ["/ws/home/.proctor/plugins/0-sdlc"], stubs: [] },
     )
 
     expect(args[0]).toBe("-p")
@@ -33,8 +33,26 @@ describe("claude flags", () => {
     ["readonly", ["--permission-mode", "dontAsk", "--tools", "Read"]],
     ["workspace-write", ["--permission-mode", "acceptEdits", "--permission-prompts", "none"]],
   ] as const)("maps %s permissions", (permissions, flags) => {
-    const args = claudeArgs(input({ permissions }), { pluginDirs: [] })
+    const args = claudeArgs(input({ permissions }), { pluginDirs: [], stubs: [] })
     expect(args.join(" ")).toContain(flags.join(" "))
     expect(args).not.toContain("--settings")
+    expect(args).not.toContain("--allowedTools")
+  })
+
+  it("declares each MCP stub as a stdio server next to the variant's, under the name Claude Code sees, callable under readonly", () => {
+    const pgsql = {
+      name: "plugin:dbtools:pgsql",
+      entry: { name: "pgsql", command: "/usr/local/bin/node", args: ["stub.mjs", "pgsql.json", "pgsql.jsonl"], tools: [] },
+    }
+
+    const args = claudeArgs(input({ permissions: "readonly", mcpServers: { docs: { command: "d" } } }), { pluginDirs: [], stubs: [pgsql] })
+
+    expect(JSON.parse(args[args.indexOf("--mcp-config") + 1] ?? "")).toEqual({
+      mcpServers: {
+        docs: { command: "d" },
+        "plugin:dbtools:pgsql": { type: "stdio", command: "/usr/local/bin/node", args: ["stub.mjs", "pgsql.json", "pgsql.jsonl"] },
+      },
+    })
+    expect(args[args.indexOf("--allowedTools") + 1]).toBe("mcp__plugin_dbtools_pgsql")
   })
 })

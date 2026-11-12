@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { probeHooks, probeInit } from "./init-probe.ts"
+import { probeHooks, probeInit, probeStubs } from "./init-probe.ts"
 import type { InitEvent } from "./stream-parser.ts"
 import { collect } from "#test/adapters.ts"
 
@@ -45,5 +45,39 @@ describe("isolation probe (system/init)", () => {
   it("accepts declared MCP servers and their tools", () => {
     const withDocs: InitEvent = { type: "system", subtype: "init", mcp_servers: [{ name: "docs" }], tools: ["Read", "mcp__docs__search"] }
     expect(probeInit(withDocs, { ...none, mcpServers: ["docs"] })).toEqual([])
+  })
+})
+
+describe("MCP stub probe (system/init)", () => {
+  const pgsql = { name: "pgsql", entry: { name: "pgsql", command: "node", args: [], tools: ["get_object_details", "execute_sql"] } }
+  const initWith = (status: string, tools: string[]): InitEvent => ({
+    type: "system",
+    subtype: "init",
+    mcp_servers: [{ name: "pgsql", status }],
+    tools,
+  })
+
+  it("accepts a stub connected with all its tools", () => {
+    expect(probeStubs(initWith("connected", ["Read", "mcp__pgsql__get_object_details", "mcp__pgsql__execute_sql"]), [pgsql])).toEqual([])
+  })
+
+  it("flags a stub that failed to start", () => {
+    expect(probeStubs(initWith("failed", []), [pgsql])).toEqual(['MCP stub "pgsql" is failed, not connected'])
+  })
+
+  it("leaves a stub still connecting to the check of its own log after the run", () => {
+    expect(probeStubs(initWith("pending", []), [pgsql])).toEqual([])
+  })
+
+  it("flags a stub the session does not list", () => {
+    expect(probeStubs(initWith("connected", []), [{ ...pgsql, name: "plugin:dba:pgsql" }])).toEqual([
+      'MCP stub "pgsql" is absent, not connected',
+    ])
+  })
+
+  it("flags a declared tool the stub did not list", () => {
+    expect(probeStubs(initWith("connected", ["mcp__pgsql__get_object_details"]), [pgsql])).toEqual([
+      'MCP stub "pgsql" lacks mcp__pgsql__execute_sql',
+    ])
   })
 })

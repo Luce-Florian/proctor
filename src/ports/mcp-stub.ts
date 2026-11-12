@@ -61,3 +61,11 @@ export interface McpStubDefinition {
   /** Answer when neither a rule nor the tool's `otherwise` applies, before the built-in fallback. */
   readonly otherwise?: McpAnswer
 }
+
+/** Which stub answered a tool call, and how: set by the agent adapter from the stub's own log. */
+export interface McpCallAnnotation {
+  /** The stub's name, as the suite declares it, whatever name the agent gave the server. */
+  readonly server: string
+  readonly tool: string
+  readonly answeredBy: McpAnsweredBy
+}

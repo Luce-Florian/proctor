@@ -3,7 +3,7 @@ import { resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { asError } from "../core/errors.ts"
 import { trialLabel } from "../core/trial-summary.ts"
-import type { AgentRunResult } from "../ports/agent.ts"
+import { agentSandboxAccess, type AgentRunResult } from "../ports/agent.ts"
 import {
   GradeError,
   mergeJudgeUsage,
@@ -224,17 +224,17 @@ export class Judge extends JudgeSettings<Judge> implements Grader {
   /** Runs one judge attempt, in a fresh workspace of the judge's sandbox. */
   async #ask({ agent, sandbox }: JudgeRuntime, pinned: string | undefined, context: GradeContext, prompt: string): Promise<AgentRunResult> {
     const label = `${trialLabel(context)} judge`
-    const workspace = await sandbox.create({ label, access: agent.sandboxAccess ?? NO_ACCESS })
+    const input = {
+      signal: AbortSignal.any([context.signal, AbortSignal.timeout(JUDGE_TIMEOUT_MS)]),
+      plugins: [],
+      mcpServers: {},
+      mcpStubs: [],
+      permissions: "readonly",
+      settings: {},
+      ...(pinned !== undefined && { model: pinned }),
+    } as const
+    const workspace = await sandbox.create({ label, access: agentSandboxAccess(agent, input) ?? NO_ACCESS })
     try {
-      const input = {
-        signal: AbortSignal.any([context.signal, AbortSignal.timeout(JUDGE_TIMEOUT_MS)]),
-        plugins: [],
-        mcpServers: {},
-        mcpStubs: [],
-        permissions: "readonly",
-        settings: {},
-        ...(pinned !== undefined && { model: pinned }),
-      } as const
       const undo = await agent.prepare?.(input, workspace)
       try {
         return await agent.run({ ...input, prompt }, workspace)

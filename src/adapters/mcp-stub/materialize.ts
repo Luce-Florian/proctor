@@ -19,6 +19,12 @@ const STUB_PROGRAM = "adapters/mcp-stub/stub-server.mjs"
 const STUB_FILES = [STUB_PROGRAM, "ports/mcp-stub-rules.mjs"]
 
 /**
+ * The directory of the Node that runs every stub, for an agent adapter's `sandboxAccess.readablePaths`: Node installed
+ * under the host home (nvm, fnm, volta) is otherwise hidden by the sandbox.
+ */
+export const STUB_RUNTIME_DIR: string = dirname(process.execPath)
+
+/**
  * A stub as any agent declares a stdio MCP server: a name, and the command that serves it. The command runs Node by
  * absolute path, the one running the harness: the sandbox `PATH` drops the host home, where nvm or volta install it.
  */

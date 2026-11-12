@@ -1,7 +1,9 @@
 import { lstat } from "node:fs/promises"
 import { relative } from "node:path"
+import { isDeepStrictEqual } from "node:util"
 import { z } from "zod"
-import { MCP_ANSWERED_BY } from "../../ports/mcp-stub.ts"
+import { MCP_ANSWERED_BY, type McpCallAnnotation } from "../../ports/mcp-stub.ts"
+import type { ToolCall } from "../../ports/agent.ts"
 import type { Workspace } from "../../ports/workspace.ts"
 import { readWorkspaceFile } from "../../shared/fs.ts"
 import { parseJsonOrUndefined } from "../../shared/text.ts"
@@ -91,4 +93,58 @@ function readinessProblems(entry: Pick<StubEntry, "name" | "tools">, events: rea
   return missing.length > 0
     ? [`${name} did not list ${missing.map((tool) => `"${tool}"`).join(", ")}: its configuration is not the one declared`]
     : []
+}
+
+/** The stub, by the name the suite declares, and the tool a call addressed, as an agent adapter reads it from the call. */
+export interface StubCallTarget {
+  readonly server: string
+  readonly tool: string
+}
+
+/**
+ * Reads the stub logs and throws when a stub did not serve the run, see {@link checkStubsReady}.
+ *
+ * @example
+ * await readServedStubLogs(entries, workspace) // throws 'The MCP stub "pgsql" never started: ...'
+ */
+export async function readServedStubLogs(entries: readonly Pick<StubEntry, "name" | "tools">[], workspace: Workspace): Promise<StubLog[]> {
+  const logs = await readStubLogs(entries, workspace)
+  checkStubsReady(entries, logs)
+  return logs
+}
+
+/**
+ * What an agent adapter does with the stubs after a run: fails it when a stub did not serve it, from the stubs' own
+ * logs, then marks each tool call a stub answered with `ToolCall.mcp`. `parseToolName` reads the agent's own naming of
+ * MCP tools: the stub and tool a call addressed, `undefined` for any other call.
+ *
+ * @example
+ * await collectStubCalls(entries, workspace, run.toolCalls, (name) => ...)
+ * // [{ name: "mcp__pgsql__get_object_details", ..., mcp: { server: "pgsql", tool: "get_object_details", answeredBy: "case" } }]
+ */
+export async function collectStubCalls(
+  entries: readonly Pick<StubEntry, "name" | "tools">[],
+  workspace: Workspace,
+  toolCalls: readonly ToolCall[],
+  parseToolName: (name: string) => StubCallTarget | undefined,
+): Promise<ToolCall[]> {
+  const annotate = stubCallAnnotator(await readServedStubLogs(entries, workspace))
+  return toolCalls.map((call) => {
+    const target = parseToolName(call.name)
+    const mcp = target && annotate(target, call.input ?? {})
+    return mcp ? { ...call, mcp } : call
+  })
+}
+
+/**
+ * Pairs the tool calls the agent reports with the calls the stubs logged: same server, tool and input, each logged call
+ * used once, in order. A call the stub never answered (denied by the agent, say) gets no annotation.
+ */
+function stubCallAnnotator(logs: readonly StubLog[]): (target: StubCallTarget, input: unknown) => McpCallAnnotation | undefined {
+  const unpaired = logs.flatMap(({ server, events }) => events.flatMap((event) => (event.event === "call" ? [{ server, ...event }] : [])))
+  return ({ server, tool }, input) => {
+    const index = unpaired.findIndex((call) => call.server === server && call.tool === tool && isDeepStrictEqual(call.input, input))
+    const [call] = index === -1 ? [] : unpaired.splice(index, 1)
+    return call && { server, tool, answeredBy: call.answeredBy }
+  }
 }

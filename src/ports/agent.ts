@@ -1,5 +1,5 @@
 import type { Teardown } from "./fixture.ts"
-import type { McpStubDefinition } from "./mcp-stub.ts"
+import type { McpCallAnnotation, McpStubDefinition } from "./mcp-stub.ts"
 import type { SandboxAccess } from "./sandbox.ts"
 import type { Workspace } from "./workspace.ts"
 
@@ -66,6 +66,8 @@ export interface ToolCall {
   readonly output?: string
   /** True when the tool reported a failure (non-zero exit, denied read...). */
   readonly isError?: boolean
+  /** Set when an MCP stub of the trial answered the call. */
+  readonly mcp?: McpCallAnnotation
 }
 
 /** Normalized outcome of a run, whatever the agent. */
@@ -117,8 +119,11 @@ export interface AgentAdapter {
   version(): Promise<string>
   /** Facts written next to the agent in the report, e.g. how it authenticates. */
   readonly details?: Readonly<Record<string, string>>
-  /** What the agent needs through the sandbox (its model API, its own binary), merged with the suite's needs. */
-  readonly sandboxAccess?: SandboxAccess
+  /**
+   * What the agent needs through the sandbox (its model API, its own binary), merged with the suite's needs: the same
+   * for every trial, or computed from the trial's input when it depends on it. Read through {@link agentSandboxAccess}.
+   */
+  readonly sandboxAccess?: SandboxAccess | ((input: AgentPrepareInput) => SandboxAccess)
   /**
    * Makes the variant's plugins available inside the workspace, e.g. installs them in its home.
    * Runs after fixtures and before `beforeEach`, outside the agent's own sandbox; returns its undo when needed.
@@ -131,4 +136,15 @@ export interface AgentAdapter {
    * cleanups wait at most {@link ABORT_GRACE_MS} for it, then run anyway while the agent may still write.
    */
   run(input: AgentRunInput, workspace: Workspace): Promise<AgentRunResult>
+}
+
+/**
+ * What `agent` needs through the sandbox for a trial run with `input`; `undefined` when it declares nothing.
+ *
+ * @example
+ * mergeAccess(agentSandboxAccess(agent, input), suite.sandboxAccess)
+ */
+export function agentSandboxAccess(agent: Pick<AgentAdapter, "sandboxAccess">, input: AgentPrepareInput): SandboxAccess | undefined {
+  // Called on the agent, not destructured: an adapter may implement it as a method.
+  return typeof agent.sandboxAccess === "function" ? agent.sandboxAccess(input) : agent.sandboxAccess
 }

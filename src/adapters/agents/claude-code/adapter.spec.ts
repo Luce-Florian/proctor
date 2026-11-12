@@ -1,16 +1,25 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { AgentRunError } from "../../../ports/agent.ts"
 import { REDACTED } from "../../redact.ts"
 import { ClaudeCodeAdapter, findExecutable } from "./adapter.ts"
 import { fakeClaude, fakeWorkspace, input, oauth, stream } from "#test/adapters.ts"
 import { fixturePath } from "#test/helpers.ts"
+import { stub, stubTool } from "#test/mcp-stubs.ts"
 
 const fixtures = fixturePath()
 
 const recorded = async (ws: { record: string }, kind: "args" | "env" | "stdin") =>
   (await readFile(`${ws.record}.${kind}`, "utf8")).split("\n")
+
+/** A plugin directory named `name`, whose .mcp.json declares `server`. */
+async function pluginDeclaring(ws: { record: string }, name: string, server: string): Promise<string> {
+  const dir = join(ws.record, "..", name)
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, ".mcp.json"), JSON.stringify({ mcpServers: { [server]: { type: "http", url: "https://db.example.com/mcp" } } }))
+  return dir
+}
 
 describe("ClaudeCodeAdapter", () => {
   const adapter = (options: { transcriptsDir?: string } = {}) => new ClaudeCodeAdapter({ credential: oauth, bin: fakeClaude, ...options })
@@ -20,10 +29,16 @@ describe("ClaudeCodeAdapter", () => {
 
     expect(await agent.version()).toBe("9.9.9")
     expect(agent.details).toEqual({ auth: "oauth", credential: "CLAUDE_CODE_OAUTH_TOKEN" })
-    expect(agent.sandboxAccess).toEqual({
+    expect(agent.sandboxAccess(input())).toEqual({
       allowedDomains: ["api.anthropic.com", "claude.ai", "platform.claude.com"],
       readablePaths: [join(fixtures.replace(/\/$/, ""))],
     })
+  })
+
+  it("lets the sandbox read the node that runs the MCP stubs, in a trial with stubs only", () => {
+    const access = adapter().sandboxAccess(input({ mcpStubs: [stub("pgsql")] }))
+
+    expect(access.readablePaths).toEqual([join(fixtures.replace(/\/$/, "")), dirname(process.execPath)])
   })
 
   it("runs in the workspace with a sandbox config dir and only its credential, and keeps the transcript", async () => {
@@ -145,12 +160,20 @@ describe("ClaudeCodeAdapter", () => {
     expect(env.some((line) => line.startsWith("CLAUDE_CODE_OAUTH_TOKEN="))).toBe(false)
   })
 
-  it("refuses MCP stubs, which it does not run yet", async () => {
-    const ws = await fakeWorkspace("say-ok")
-    const pgsql = { server: "pgsql", tools: [] }
+  it("fails a run whose MCP stub never started, from the stub's own log", async () => {
+    const ws = await fakeWorkspace("mcp-stub")
+    const pgsql = stub("pgsql", stubTool("get_object_details"))
 
     await expect(adapter().run(input({ mcpStubs: [pgsql] }), ws)).rejects.toThrow(
-      'claude-code does not run MCP stubs yet ("pgsql"): run the suite with --agent fake, or remove .mcpStub() from the variant.',
+      'The MCP stub "pgsql" never started: rerun with --sandbox local-temp to tell a sandbox denial from an agent that did not spawn it',
+    )
+  })
+
+  it("refuses a stub whose server two loaded plugins declare", async () => {
+    const ws = await fakeWorkspace("mcp-stub")
+    const plugins = await Promise.all(["dbtools", "dba"].map((name) => pluginDeclaring(ws, name, "pgsql")))
+    await expect(adapter().prepare(input({ plugins, mcpStubs: [stub("pgsql")] }), ws)).rejects.toThrow(
+      'mcpStub "pgsql": plugins "dbtools" and "dba" both declare this server; load only one',
     )
   })
 

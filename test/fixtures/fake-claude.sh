@@ -2,8 +2,9 @@
 # Stands in for `claude` in the adapter tests: records its arguments and environment, then replays a recorded
 # stream-json file. `__PLUGIN_DIR__` in the stream is replaced by the first --plugin-dir argument, `__TOKEN__` by the
 # credential it received, as an agent that printed its environment would. `plugin ...` calls also record their own env.
-# The prompt, read on stdin, is recorded too.
-# FAKE_CLAUDE_STREAM, FAKE_CLAUDE_RECORD and FAKE_CLAUDE_EXIT come from the test workspace environment.
+# The prompt, read on stdin, is recorded too. With FAKE_CLAUDE_NODE, the stdio servers of --mcp-config are run as claude
+# runs them, by fake-mcp-client.mjs: handshake, then one call per mcp__ tool_use of the stream.
+# FAKE_CLAUDE_STREAM, FAKE_CLAUDE_RECORD, FAKE_CLAUDE_EXIT and FAKE_CLAUDE_NODE come from the test workspace environment.
 if [ "$1" = "--version" ]; then echo "9.9.9 (Claude Code)"; exit 0; fi
 if [ -n "$FAKE_CLAUDE_RECORD" ]; then
   printf '%s\n' "$@" >> "$FAKE_CLAUDE_RECORD.args"
@@ -18,9 +19,14 @@ fi
 if [ "$1" = "plugin" ]; then exit 0; fi
 if [ -n "$FAKE_CLAUDE_RECORD" ]; then cat > "$FAKE_CLAUDE_RECORD.stdin"; fi
 plugin_dir=""
+mcp_config=""
 while [ $# -gt 0 ]; do
   if [ "$1" = "--plugin-dir" ] && [ -z "$plugin_dir" ]; then plugin_dir="$2"; fi
+  if [ "$1" = "--mcp-config" ]; then mcp_config="$2"; fi
   shift
 done
+if [ -n "$FAKE_CLAUDE_NODE" ]; then
+  "$FAKE_CLAUDE_NODE" "$(dirname "$0")/fake-mcp-client.mjs" "$mcp_config" "$FAKE_CLAUDE_STREAM" || exit 1
+fi
 sed -e "s#__PLUGIN_DIR__#$plugin_dir#g" -e "s#__TOKEN__#$CLAUDE_CODE_OAUTH_TOKEN#g" "$FAKE_CLAUDE_STREAM"
 exit "${FAKE_CLAUDE_EXIT:-0}"

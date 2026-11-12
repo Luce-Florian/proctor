@@ -43,7 +43,9 @@ proctor/
 │   │   │   ├── flags.ts         # AgentRunInput → CLI flags
 │   │   │   ├── plugins.ts       # references (name, path, marketplace), copy, marketplace, fingerprint
 │   │   │   ├── stream-parser.ts # stream-json → AgentRunResult, toolCalls
-│   │   │   └── init-probe.ts    # system/init → undeclared MCP or plugin; undeclared SessionStart hook
+│   │   │   ├── mcp-stubs.ts     # MCP stub named after a loaded plugin's server, mcp__<server>__<tool> → (stub, tool)
+│   │   │   ├── tool-names.ts    # mcp__<server> and mcp__<server>__ of an MCP server
+│   │   │   └── init-probe.ts    # system/init → undeclared MCP or plugin; undeclared SessionStart hook; stub failed or absent
 │   │   └── sandboxes/
 │   │       ├── temp-layout.ts         # root/{work,home,tmp} of a trial, allowlisted env
 │   │       ├── local-temp/sandbox.ts  # the layout alone: isolation degraded

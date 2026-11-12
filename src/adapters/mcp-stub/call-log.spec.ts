@@ -2,7 +2,9 @@ import { execFileSync } from "node:child_process"
 import { mkdir, symlink, truncate, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { checkStubsReady, readStubLogs, type StubLog } from "./call-log.ts"
+import type { ToolCall } from "../../ports/agent.ts"
+import type { Workspace } from "../../ports/workspace.ts"
+import { checkStubsReady, collectStubCalls, readStubLogs, type StubLog } from "./call-log.ts"
 import { stubLogPath } from "./materialize.ts"
 import { tempWorkspace } from "#test/helpers.ts"
 
@@ -10,6 +12,13 @@ import { tempWorkspace } from "#test/helpers.ts"
 const pgsql = { name: "pgsql", tools: ["list_instances", "get_object_details"] }
 
 const logOf = (...events: StubLog["events"]): StubLog[] => [{ server: "pgsql", events }]
+
+/** Writes the log of pgsql in `workspace`, one line per entry. */
+async function writePgsqlLog(workspace: Workspace, lines: readonly string[]): Promise<void> {
+  const log = stubLogPath(workspace, "pgsql")
+  await mkdir(dirname(log), { recursive: true })
+  await writeFile(log, lines.map((line) => `${line}\n`).join(""))
+}
 
 describe("readStubLogs", () => {
   it("reads nothing for a stub that never started", async () => {
@@ -20,9 +29,7 @@ describe("readStubLogs", () => {
 
   it("skips the lines that are not stub events, which the agent may have written in the log", async () => {
     const workspace = await tempWorkspace()
-    const log = stubLogPath(workspace, "pgsql")
-    await mkdir(dirname(log), { recursive: true })
-    await writeFile(log, '{"event":"initialize"}\nnot json\n{"event":"call","tool":"list_instances"}\n')
+    await writePgsqlLog(workspace, ['{"event":"initialize"}', "not json", '{"event":"call","tool":"list_instances"}'])
 
     expect(await readStubLogs([pgsql], workspace)).toEqual(logOf({ event: "initialize" }))
   })
@@ -93,5 +100,51 @@ describe("checkStubsReady", () => {
     ],
   ])("fails the trial when a stub %s", (_, logs, message) => {
     expect(() => checkStubsReady([pgsql], logs)).toThrow(message)
+  })
+})
+
+describe("collectStubCalls", () => {
+  /** A stub that served both its tools, and answered orders with a rule of the case. */
+  const servedOrders = [
+    '{"event":"initialize"}',
+    '{"event":"tools/list","tools":["list_instances","get_object_details"]}',
+    '{"event":"call","tool":"get_object_details","input":{"object_name":"orders"},"answeredBy":"case"}',
+  ]
+  /** An agent that names the tools of a stub `<server>.<tool>`. */
+  const parseToolName = (name: string) => {
+    const [server, tool] = name.split(".")
+    return server === "pgsql" && tool !== undefined ? { server, tool } : undefined
+  }
+  const readsOrders: ToolCall = { name: "pgsql.get_object_details", input: { object_name: "orders" } }
+
+  it("marks a call the stub logged with what answered it", async () => {
+    const workspace = await tempWorkspace()
+    await writePgsqlLog(workspace, servedOrders)
+
+    const [call] = await collectStubCalls([pgsql], workspace, [readsOrders], parseToolName)
+
+    expect(call?.mcp).toEqual({ server: "pgsql", tool: "get_object_details", answeredBy: "case" })
+  })
+
+  it("leaves a call to another tool as it is", async () => {
+    const workspace = await tempWorkspace()
+    await writePgsqlLog(workspace, servedOrders)
+    const readsDiff: ToolCall = { name: "Read", input: { file_path: "change.diff" } }
+
+    expect(await collectStubCalls([pgsql], workspace, [readsDiff], parseToolName)).toEqual([readsDiff])
+  })
+
+  it("leaves unmarked a call the stub never answered, e.g. denied by the agent", async () => {
+    const workspace = await tempWorkspace()
+    await writePgsqlLog(workspace, servedOrders)
+    const readsCustomers: ToolCall = { name: "pgsql.get_object_details", input: { object_name: "customers" } }
+
+    expect(await collectStubCalls([pgsql], workspace, [readsCustomers], parseToolName)).toEqual([readsCustomers])
+  })
+
+  it("fails the run when a stub never started", async () => {
+    const workspace = await tempWorkspace()
+
+    await expect(collectStubCalls([pgsql], workspace, [readsOrders], parseToolName)).rejects.toThrow('The MCP stub "pgsql" never started')
   })
 })
